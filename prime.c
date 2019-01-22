@@ -14,7 +14,7 @@ int init_module(void) {
   int sys_call_table_offset;
   unsigned char *do_syscall_64;
   unsigned long long *sys_call_table;
-  unsigned char *entry_SYSCALL_64 = (unsigned char*)((unsigned long long)native_load_gs_index - ENTRY_SYSCALL_64_SIZE);
+  unsigned char *entry_SYSCALL_64 = (unsigned char*)((unsigned long long)(native_load_gs_index) - ENTRY_SYSCALL_64_SIZE);
   unsigned char pattern_0[] = {0x48, 0x89, 0xc7, 0x48, 0x89, 0xe6};
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc2};
   
