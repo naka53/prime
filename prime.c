@@ -22,7 +22,7 @@ int init_module(void) {
 
   for (i = 0; i < 1024; i++) {
     found = true;
-    for (j = 0; i < PATTERN_0_SIZE; j++) {
+    for (j = 0; j < PATTERN_0_SIZE; j++) {
       if (entry_SYSCALL_64[i + j] != pattern_0[j]) {
 	found = false;
 	break;
@@ -45,7 +45,7 @@ int init_module(void) {
   /*
   for (i = 0; i < 1024; i++) {
     found = true;
-    for (j = 0; i < PATTERN_1_SIZE; j++) {
+    for (j = 0; j < PATTERN_1_SIZE; j++) {
       if (do_syscall_64[i + j] != pattern_1[j]) {
 	found = false;
 	break;
