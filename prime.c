@@ -32,7 +32,6 @@ int init_module(void) {
     if (found) {
       do_syscall_64_offset = *(int *)(entry_SYSCALL_64 + i + 6 + 1);
       do_syscall_64 = (unsigned char *)(entry_SYSCALL_64 + i + 6 + 1 + 4 + do_syscall_64_offset);
-      printk(KERN_INFO "OFFSET %d and entry_SYSCALL_64 %p native_load_gs_index %p", do_syscall_64_offset, entry_SYSCALL_64, native_load_gs_index);
       printk(KERN_INFO "call to do_syscall_64 at %p (%p)", entry_SYSCALL_64 + i + 9, do_syscall_64);
       break;
     } 
@@ -42,7 +41,7 @@ int init_module(void) {
     printk(KERN_INFO "failed to find do_syscall_64 address\n");
     return 1;
   }
-  /*
+  
   for (i = 0; i < 1024; i++) {
     found = true;
     for (j = 0; i < PATTERN_1_SIZE; j++) {
