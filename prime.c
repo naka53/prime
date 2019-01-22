@@ -32,6 +32,7 @@ int init_module(void) {
     if (found) {
       do_syscall_64_offset = *(int *)(entry_SYSCALL_64 + i + 6 + 1);
       do_syscall_64 = (unsigned char *)(entry_SYSCALL_64 + i + 6 + 1 + 4 + do_syscall_64_offset);
+      printk(KERN_INFO "OFFSET %d and entry_SYSCALL_64 %p", do_syscall_64_offset, entry_SYSCALL_64);
       printk(KERN_INFO "call to do_syscall_64 at %p (%p)", entry_SYSCALL_64 + i + 9, do_syscall_64);
       break;
     } 
