@@ -10,11 +10,11 @@ MODULE_LICENSE("GPL");
 int init_module(void) {
   int i, j;
   bool found;
-  int do_syscall_64_offset;
-  int sys_call_table_offset;
+  int *do_syscall_64_offset;
+  int *sys_call_table_offset;
   unsigned char *do_syscall_64;
   unsigned long long *sys_call_table;
-  unsigned char *entry_SYSCALL_64 = (unsigned char*)((unsigned long long)(native_load_gs_index) - ENTRY_SYSCALL_64_SIZE);
+  unsigned char *entry_SYSCALL_64 = (unsigned char *)(native_load_gs_index - ENTRY_SYSCALL_64_SIZE);
   unsigned char pattern_0[] = {0x48, 0x89, 0xc7, 0x48, 0x89, 0xe6};
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc2};
   
@@ -30,8 +30,8 @@ int init_module(void) {
     }
 
     if (found) {
-      do_syscall_64_offset = *(int *)(entry_SYSCALL_64 + i + 6 + 1);
-      do_syscall_64 = (unsigned char *)(entry_SYSCALL_64 + i + 6 + 1 + 4 + do_syscall_64_offset);
+      do_syscall_64_offset = (int *)(entry_SYSCALL_64 + i + 6 + 1);
+      do_syscall_64 = (unsigned char *)(entry_SYSCALL_64 + i + 6 + 1 + 4 + *do_syscall_64_offset);
       printk(KERN_INFO "call to do_syscall_64 at %p (%p)", entry_SYSCALL_64 + i + 9, do_syscall_64);
       break;
     } 
@@ -41,7 +41,8 @@ int init_module(void) {
     printk(KERN_INFO "failed to find do_syscall_64 address\n");
     return 1;
   }
-  
+
+  /*
   for (i = 0; i < 1024; i++) {
     found = true;
     for (j = 0; i < PATTERN_1_SIZE; j++) {
@@ -52,8 +53,8 @@ int init_module(void) {
     }
 
     if (found) {
-      sys_call_table_offset = *(int *)(do_syscall_64 + i + 6 + 4);
-      sys_call_table = (unsigned long long *)sys_call_table_offset;
+      sys_call_table_offset = (int *)(do_syscall_64 + i + 6 + 4);
+      sys_call_table = (unsigned long long *)(*sys_call_table_offset);
       printk(KERN_INFO "call to sys_call_table at %p (%p)", do_syscall_64 + i + 6, sys_call_table); 
       break;
     } 
@@ -63,7 +64,7 @@ int init_module(void) {
     printk(KERN_INFO "failed to find do_syscall_64 address\n");
     return 1;
   }
-
+  */
   
   /*
   for (i = 0; i < 4032; i++) {
