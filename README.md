@@ -5,10 +5,10 @@ pattern in entry_SYSCALL_64 for do_syscall_64
 e8 ?? ?? ?? ??  callq [offset]
 
 v4.9-8
-4d 31 f6	xor %r14, %r14
-41 57		push %r15
-4d 31 ff	xor %r15, %r15
-48 89 e7	mov %rsp, %rdi
+4d 31 f6	xor %r14, %r14  
+41 57		push %r15  
+4d 31 ff	xor %r15, %r15  
+48 89 e7	mov %rsp, %rdi  
 
 v4.17
 41 57		push %r15
