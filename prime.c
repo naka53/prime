@@ -13,7 +13,7 @@ static void **sys_call_table;
 void search_sys_call_table(void) {
   int i, j;
   int *do_syscall_64_offset;
-  int *sys_call_table_offset;
+  int *sys_call_table_address;
   unsigned char *entry_SYSCALL_64 = (unsigned char *)(native_load_gs_index - ENTRY_SYSCALL_64_SIZE);
   unsigned char *do_syscall_64;
   unsigned char pattern_0[] = {0x48, 0x89, 0xc7, 0x48, 0x89, 0xe6};
@@ -43,8 +43,8 @@ void search_sys_call_table(void) {
 	break;
     
     if (j == PATTERN_SIZE) {
-      sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_SIZE + 4);
-      sys_call_table = (void **)(*sys_call_table_offset);
+      sys_call_table_address = (int *)(do_syscall_64 + i + PATTERN_SIZE + 4);
+      sys_call_table = (void **)(*sys_call_table_address);
       printk(KERN_INFO "call to sys_call_table at %p (%p)", do_syscall_64 + i + PATTERN_SIZE, sys_call_table); 
       break;
     } 
