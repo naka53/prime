@@ -12,7 +12,7 @@ static unsigned long long *sys_call_table;
 
 void search_sys_call_table(void) {
   int i, j;
-  bool patter_found;
+  bool pattern_found;
   int *do_syscall_64_offset;
   int *sys_call_table_offset;
   unsigned char *entry_SYSCALL_64 = (unsigned char *)(native_load_gs_index - ENTRY_SYSCALL_64_SIZE);
@@ -24,7 +24,7 @@ void search_sys_call_table(void) {
     pattern_found = true;
     for (j = 0; j < PATTERN_0_SIZE; j++) {
       if (entry_SYSCALL_64[i + j] != pattern_0[j]) {
-	patter_found = false;
+	pattern_found = false;
 	break;
       }
     }
