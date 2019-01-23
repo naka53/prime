@@ -1,6 +1,8 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
+#define DUMP_SIZE 1024
+
 MODULE_LICENSE("GPL");
 
 int init_module(void) {
@@ -8,11 +10,11 @@ int init_module(void) {
   unsigned char *do_syscall_64 = (unsigned char *)0xffffffff81003af0;
   unsigned char *entry_SYSCALL_64 = (unsigned char *)0xffffffff81618f10;
 
-  printk(KERN_INFO "prime module started\n");
+  printk(KERN_INFO "gather module started");
 
-  printk(KERN_INFO "entry_SYSCALL_64\n");
-  for (i = 0; i < 1024; i += 8)
-    printk(KERN_INFO "%p : %02x %02x %02x %02x %02x %02x %02x %02x\n",
+  printk(KERN_INFO "entry_SYSCALL_64");
+  for (i = 0; i < DUMP_SIZE; i += 8)
+    printk(KERN_INFO "%p : %02x %02x %02x %02x %02x %02x %02x %02x",
 	   entry_SYSCALL_64 + i,
 	   entry_SYSCALL_64[i],
 	   entry_SYSCALL_64[i + 1],
@@ -23,9 +25,9 @@ int init_module(void) {
 	   entry_SYSCALL_64[i + 6],
 	   entry_SYSCALL_64[i + 7]);
 
-  printk(KERN_INFO "do_syscall_64\n");
-  for (i = 0; i < 1024; i += 8)
-    printk(KERN_INFO "%p : %02x %02x %02x %02x %02x %02x %02x %02x\n",
+  printk(KERN_INFO "do_syscall_64");
+  for (i = 0; i < DUMP_SIZE; i += 8)
+    printk(KERN_INFO "%p : %02x %02x %02x %02x %02x %02x %02x %02x",
 	   do_syscall_64 + i,
 	   do_syscall_64[i],
 	   do_syscall_64[i + 1],
@@ -35,4 +37,8 @@ int init_module(void) {
 	   do_syscall_64[i + 5],
 	   do_syscall_64[i + 6],
 	   do_syscall_64[i + 7]);
+}
+
+void cleanup_module(void) {
+  printk(KERN_INFO "gather module stopped");
 }
