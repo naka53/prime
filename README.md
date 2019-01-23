@@ -19,8 +19,8 @@ Looking for sys_call_table offset in do_syscall_64 (arch/x86/entry/common.c)
 
 pattern detection v4.[17-20]
 ```
-48 19 c0              sbb %rax, %rax  
-48 21 c7              and %rax, %rax  
+48 19 c0    sbb %rax, %rax  
+48 21 c7    and %rax, %rax  
 ```
 
 Offset between entry_SYSCALL_64 and native_load_gs_index
