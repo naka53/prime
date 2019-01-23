@@ -27,3 +27,8 @@ pattern detection
 48 19 c0    sbb %rax, %rax  
 48 21 c7    and %rax, %rax  
 ```
+
+### References
+https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S  
+https://github.com/torvalds/linux/blob/master/arch/x86/entry/common.c  
+https://0xax.gitbooks.io/linux-insides/content/SysCall/linux-syscall-1.html  
