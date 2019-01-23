@@ -1,9 +1,11 @@
-# prime (rootkit)
+# prime
+
+Linux kernel rootkit for kernel version 4.17+
 
 pattern in entry_SYSCALL_64 before do_syscall_64
-
+```
 e8 ?? ?? ?? ??  callq [offset]
-
+```
 
 v4.[17-20]  
 ```
@@ -13,8 +15,9 @@ v4.[17-20]
 48 89 e6    mov %rsp, %rsi  
 ```
 pattern in do_syscall_64 before sys_call_table
-
+```
 48 8b 04 d5 ?? ?? ?? ?? mov [offset](, %rax, 8), %rax
+```
 
 v4.17  
 ```
