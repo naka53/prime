@@ -62,3 +62,20 @@ v4.20
 48 81 ff 4e 01 00 00	cmp $0x14f, %rdi  
 48 19 c0       	  	  sbb %rax, %rax  
 48 21 c7		          and %rax %rax  
+
+Offset between entry_SYSCALL_64 and native_load_gs_index
+
+v4.20
+3408
+
+v4.19
+3408
+
+v4.18
+3408
+
+v4.17
+3408
+
+v4.9-8
+4032
