@@ -10,13 +10,6 @@ MODULE_LICENSE("GPL");
 
 static void **sys_call_table;
 
-asmlinkage long (*real_close)(unsigned int);
-
-asmlinkage long fake_close(unsigned int fd) {
-  printk(KERN_INFO "sys_close hooked");
-  return real_close(fd);
-}
-
 void search_sys_call_table(void) {
   int i, j;
   int *do_syscall_64_offset;
@@ -63,22 +56,9 @@ void search_sys_call_table(void) {
   }
 }
 
-void hook_sys_call_table(void) {
-  if (!sys_call_table) {
-    printk(KERN_INFO "failed to hook sys_close, missing sys_call_table address");
-    return;
-  }
-
-  write_cr0(read_cr0() & (~0x10000));
-  real_close = sys_call_table[__NR_close];
-  sys_call_table[__NR_close] = fake_close;
-  write_cr0(read_cr0() | 0x10000);
-}
-
 int init_module(void) {
   printk(KERN_INFO "prime module started");
   search_sys_call_table();
-  hook_sys_call_table();
   return 0;
 }
 
