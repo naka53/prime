@@ -1,0 +1,3 @@
+do_syscall_64 0xffffffff81003af0
+entry_SYSCALL_64 0xffffffff81618f10
+sys_call_table 0xffffffff81800200
