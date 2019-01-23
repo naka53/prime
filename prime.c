@@ -8,7 +8,7 @@ MODULE_LICENSE("GPL");
 #define PATTERN_0_SIZE 6
 #define PATTERN_1_SIZE 6
 
-static unsigned long long *sys_call_table;
+static void **sys_call_table;
 
 void search_sys_call_table(void) {
   int i, j;
@@ -31,7 +31,7 @@ void search_sys_call_table(void) {
 
     if (pattern_found) {
       do_syscall_64_offset = (int *)(entry_SYSCALL_64 + i + PATTERN_0_SIZE + 1);
-      do_syscall_64 = (unsigned char *)(entry_SYSCALL_64 + i + PATTERN_0_SIZE + 1 + 4 + *do_syscall_64_offset);
+      do_syscall_64 = (unsigned char *)(entry_SYSCALL_64 + i + PATTERN_0_SIZE + 1 + sizeof(int) + *do_syscall_64_offset);
       printk(KERN_INFO "call to do_syscall_64 at %p (%p)", entry_SYSCALL_64 + i + PATTERN_0_SIZE, do_syscall_64);
       break;
     } 
@@ -54,7 +54,7 @@ void search_sys_call_table(void) {
 
     if (pattern_found) {
       sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_1_SIZE + 4);
-      sys_call_table = (unsigned long long *)(*sys_call_table_offset);
+      sys_call_table = (void **)(*sys_call_table_offset);
       printk(KERN_INFO "call to sys_call_table at %p (%p)", do_syscall_64 + i + PATTERN_1_SIZE, sys_call_table); 
       break;
     } 
