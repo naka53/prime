@@ -1,5 +1,3 @@
-entry_SYSCALL_64 0xffffffff81618f10
-
 0f 01 f8 65 48 89 04 25
 00 48 00 00 0f 20 d8 48
 25 00 e0 ff ff 48 0f ba
