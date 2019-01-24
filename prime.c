@@ -3,8 +3,6 @@
 #include <linux/slab.h>
 #include <linux/version.h>
 
-#include <asm/msr.h>
-
 MODULE_LICENSE("GPL");
 
 #define SEARCH_RANGE 512
@@ -89,6 +87,8 @@ void hook_syscall(void) {
     return;
   }
 
+  
+  
   write_cr0(read_cr0() & (~0x10000));
   real_close = (void *)sys_call_table[3];
   sys_call_table[3] = fake_close;
