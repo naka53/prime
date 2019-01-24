@@ -1,6 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 
 MODULE_LICENSE("GPL");
 
@@ -27,7 +28,11 @@ void search_sys_call_table(void) {
   unsigned char *do_syscall_64;
   unsigned char pattern_0[] = {0x48, 0x89, 0xc7, 0x48, 0x89, 0xe6, 0xe8};
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc7, 0x48};
-  unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x19, 0xd2, 0x48};
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
+  unsigned char pattern_2[] = {0x00, 0x48, 0x19, 0xd2, 0x21, 0xd0, 0x48};
+#else
+  unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x89, 0xef, 0x48};
+#endif
   
   for (i = 0; i < SEARCH_RANGE; i++) {
     for (j = 0; j < PATTERN_SIZE; j++)
