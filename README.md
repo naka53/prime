@@ -38,15 +38,7 @@ pattern detection
 v4.17  
 48 19 d2    sbb %rdx, %rdx  
 21 d0       and %edx, %eax  
-v4.18  
-48 19 d2    sbb %rdx, %rdx  
-21 d0       and %edx, %eax  
-48 89 ef    mov %rbp, %rdi  
-v4.19  
-48 19 d2    sbb %rdx, %rdx  
-21 d0       and %edx, %eax  
-48 89 ef    mov %rbp, %rdi  
-v4.20  
+v4.[18-20]  
 48 19 d2    sbb %rdx, %rdx  
 21 d0       and %edx, %eax  
 48 89 ef    mov %rbp, %rdi  
