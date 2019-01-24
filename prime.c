@@ -3,9 +3,10 @@
 #include <linux/slab.h>
 #include <linux/version.h>
 
+#include <asm/msr.h>
+
 MODULE_LICENSE("GPL");
 
-#define ENTRY_SYSCALL_64_SIZE 3408
 #define SEARCH_RANGE 512
 #define PATTERN_SIZE 7
 
@@ -24,12 +25,14 @@ void search_sys_call_table(void) {
   int *do_syscall_64_offset;
   int *sys_call_table_offset;
   int *ia32_sys_call_table_offset;
-  unsigned char *entry_SYSCALL_64 = (unsigned char *)(native_load_gs_index - ENTRY_SYSCALL_64_SIZE);
+  unsigned char *entry_SYSCALL_64;
   unsigned char *do_syscall_64;
   unsigned char pattern_0[] = {0x48, 0x89, 0xc7, 0x48, 0x89, 0xe6, 0xe8};
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc7, 0x48};
   unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x89, 0xef, 0x48};
   
+  rdmsrl(MSR_LSTAR, entry_SYSCALL_64);
+
   for (i = 0; i < SEARCH_RANGE; i++) {
     for (j = 0; j < PATTERN_SIZE; j++)
       if (entry_SYSCALL_64[i + j] != pattern_0[j])
@@ -105,7 +108,7 @@ void unhook_syscall(void) {
 
 int init_module(void) {
   printk(KERN_INFO "prime module started");
-  search_sys_call_table();
+  //search_sys_call_table();
   //hook_syscall();
   return 0;
 }
