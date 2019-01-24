@@ -29,12 +29,12 @@ pattern detection
 ```
 
 ### Looking for ia32_sys_call_table offset in do_syscall_32_irqs_on (arch/x86/entry/common.c)
-'''
+```
 48 8b 04 c5 ?? ?? ?? ?? move [offset](, %rax, 8), %rax
-'''
+```
 
 pattern detection
-'''
+```
 v4.17  
 48 19 d2    sbb %rdx, %rdx  
 21 d0       and %edx, %eax  
@@ -50,7 +50,7 @@ v4.20
 48 19 d2    sbb %rdx, %rdx  
 21 d0       and %edx, %eax  
 48 89 ef    mov %rbp, %rdi  
-'''
+```
 
 ### References
 https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S  
