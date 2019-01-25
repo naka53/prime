@@ -1,7 +1,6 @@
 #include <asm-generic/unistd.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/slab.h>
 
 MODULE_LICENSE("GPL");
 
@@ -83,7 +82,7 @@ void search_sys_call_table(void) {
 
 void hook_syscall(void) {
   if (!sys_call_table) {
-    printk(KERN_INFO "failed to hook syscall, sys_call_table address is missing");
+    printk(KERN_INFO "failed to hook syscall64, sys_call_table address is missing");
     return;
   }
   
