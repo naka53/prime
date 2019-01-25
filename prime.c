@@ -1,4 +1,4 @@
-
+#include <asm-generic/unistd.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 
@@ -22,13 +22,11 @@ void search_sys_call_table(void) {
   int *do_syscall_64_offset;
   int *sys_call_table_offset;
   int *ia32_sys_call_table_offset;
-  unsigned char *entry_SYSCALL_64;
+  unsigned char *entry_SYSCALL_64 = (unsigned char*)native_read_msr(MSR_LSTAR);
   unsigned char *do_syscall_64;
   unsigned char pattern_0[] = {0x48, 0x89, 0xc7, 0x48, 0x89, 0xe6, 0xe8};
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc7, 0x48};
   unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x89, 0xef, 0x48};
-  
-  rdmsrl(MSR_LSTAR, entry_SYSCALL_64);
 
   for (i = 0; i < SEARCH_RANGE; i++) {
     for (j = 0; j < PATTERN_SIZE; j++)
@@ -108,11 +106,11 @@ int init_module(void) {
   search_sys_call_table();
   printk(KERN_INFO "sys_call_table %llx", (unsigned long long)sys_call_table);
   printk(KERN_INFO "ia32_sys_call_table %llx", (unsigned long long)ia32_sys_call_table);
-  hook_syscall();
+  //hook_syscall();
   return 0;
 }
 
 void cleanup_module(void) {
   printk(KERN_INFO "prime module stopped");
-  unhook_syscall();
+  //unhook_syscall();
 }
