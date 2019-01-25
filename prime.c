@@ -1,7 +1,7 @@
+#include <asm-generic/unistd.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
-#include <linux/version.h>
 
 MODULE_LICENSE("GPL");
 
@@ -88,8 +88,8 @@ void hook_syscall(void) {
   }
   
   write_cr0(read_cr0() & (~0x10000));
-  real_close = (void *)sys_call_table[3];
-  sys_call_table[3] = fake_close;
+  real_close = (void *)sys_call_table[__NR_close];
+  sys_call_table[__NR_close] = fake_close;
   write_cr0(read_cr0() | 0x10000);
 }
 
@@ -100,18 +100,20 @@ void unhook_syscall(void) {
   }
 
   write_cr0(read_cr0() & (~0x10000));
-  sys_call_table[3] = real_close;
+  sys_call_table[__NR_close] = real_close;
   write_cr0(read_cr0() | 0x10000);
 }
 
 int init_module(void) {
   printk(KERN_INFO "prime module started");
-  //search_sys_call_table();
-  //hook_syscall();
+  search_sys_call_table();
+  printk(KERN_INFO "sys_call_table %llx", (unsigned long long)sys_call_table);
+  printk(KERN_INFO "ia32_sys_call_table %llx", (unsigned long long)ia32_sys_call_table);
+  hook_syscall();
   return 0;
 }
 
 void cleanup_module(void) {
   printk(KERN_INFO "prime module stopped");
-  //unhook_syscall();
+  unhook_syscall();
 }
