@@ -4,8 +4,7 @@ Linux kernel rootkit for kernel version 4.[17-20]
 
 ### Looking for entry_SYSCALL_64 address
 
-EXPORT_SYMBOL(native_load_gs_index) in arch/x86/entry/entry_64.S  
-Offset between entry_SYSCALL_64 and native_load_gs_index : 3408 bytes  
+MSR_LSTAR constant
 
 ### Looking for call to do_syscall_64 in entry_SYSCALL_64 (arch/x86/entry/entry_64.S)
 ```
