@@ -82,7 +82,7 @@ void search_sys_call_table(void) {
 
 void hook_syscall(void) {
   if (!sys_call_table) {
-    printk(KERN_INFO "failed to hook syscall, sys_call_table address is missing");
+    printk(KERN_INFO "failed to hook syscall64, sys_call_table address is missing");
     return;
   }
   
