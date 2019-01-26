@@ -14,8 +14,8 @@ int init_module(void) {
 
   printk(KERN_INFO "entry_SYSCALL_64");
   for (i = 0; i < DUMP_SIZE; i += 8)
-    printk(KERN_INFO "%p : %02x %02x %02x %02x %02x %02x %02x %02x",
-	   entry_SYSCALL_64 + i,
+    printk(KERN_INFO "%llx : %02x %02x %02x %02x %02x %02x %02x %02x",
+	   (unsigned long long)(entry_SYSCALL_64 + i),
 	   entry_SYSCALL_64[i],
 	   entry_SYSCALL_64[i + 1],
 	   entry_SYSCALL_64[i + 2],
@@ -27,8 +27,8 @@ int init_module(void) {
 
   printk(KERN_INFO "do_syscall_64");
   for (i = 0; i < DUMP_SIZE; i += 8)
-    printk(KERN_INFO "%p : %02x %02x %02x %02x %02x %02x %02x %02x",
-	   do_syscall_64 + i,
+    printk(KERN_INFO "%llx : %02x %02x %02x %02x %02x %02x %02x %02x",
+	   (unsigned long long)(do_syscall_64 + i),
 	   do_syscall_64[i],
 	   do_syscall_64[i + 1],
 	   do_syscall_64[i + 2],
