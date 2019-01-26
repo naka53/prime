@@ -10,9 +10,9 @@ MODULE_LICENSE("GPL");
 static void **sys_call_table;
 static void **ia32_sys_call_table;
 
-asmlinkage long(*real_close)(int);
+asmlinkage long(*real_close)(unsigned int);
 
-asmlinkage long fake_close(int fd) {
+asmlinkage long fake_close(unsigned int fd) {
   printk(KERN_INFO "sys_close hooked");
   return (*real_close)(fd);
 }
@@ -84,10 +84,10 @@ static void hook_syscall(void) {
     return;
   }
   
-  write_cr0(read_cr0() & (~0x10000));
+  write_cr0(read_cr0() & 0b11111111111111101111111111111111);
   real_close = (void *)sys_call_table[__NR_close];
   sys_call_table[__NR_close] = fake_close;
-  write_cr0(read_cr0() | 0x10000);
+  write_cr0(read_cr0() | 0b00000000000000010000000000000000);
 }
 
 static void unhook_syscall(void) {
@@ -95,10 +95,9 @@ static void unhook_syscall(void) {
     printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
     return;
   }
-
-  write_cr0(read_cr0() & (~0x10000));
+  write_cr0(read_cr0() & 0b11111111111111101111111111111111);
   sys_call_table[__NR_close] = real_close;
-  write_cr0(read_cr0() | 0x10000);
+  write_cr0(read_cr0() | 0b00000000000000010000000000000000);
 }
 
 int init_module(void) {
