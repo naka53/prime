@@ -1,6 +1,6 @@
-#include <asm-generic/unistd.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/unistd.h>
 
 MODULE_LICENSE("GPL");
 
@@ -17,7 +17,7 @@ asmlinkage long fake_close(int fd) {
   return (*real_close)(fd);
 }
 
-void search_sys_call_table(void) {
+static void search_sys_call_table(void) {
   int i, j;
   int *do_syscall_64_offset;
   int *sys_call_table_offset;
@@ -78,7 +78,7 @@ void search_sys_call_table(void) {
     printk(KERN_INFO "failed to find ia32_sys_call_table address");
 }
 
-void hook_syscall(void) {
+static void hook_syscall(void) {
   if (!sys_call_table) {
     printk(KERN_INFO "failed to hook syscall64, sys_call_table address is missing");
     return;
@@ -90,7 +90,7 @@ void hook_syscall(void) {
   write_cr0(read_cr0() | 0x10000);
 }
 
-void unhook_syscall(void) {
+static void unhook_syscall(void) {
   if (!sys_call_table) {
     printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
     return;
@@ -104,8 +104,6 @@ void unhook_syscall(void) {
 int init_module(void) {
   printk(KERN_INFO "prime module started");
   search_sys_call_table();
-  printk(KERN_INFO "sys_call_table %llx", (unsigned long long)sys_call_table);
-  printk(KERN_INFO "ia32_sys_call_table %llx", (unsigned long long)ia32_sys_call_table);
   //hook_syscall();
   return 0;
 }
