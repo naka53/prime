@@ -2,9 +2,6 @@
 #include <linux/module.h>
 #include <linux/unistd.h>
 
-#include <linux/vmalloc.h>
-#include <linux/mm.h>
-
 MODULE_LICENSE("GPL");
 
 #define SEARCH_RANGE 512
@@ -18,24 +15,6 @@ asmlinkage long(*real_close)(unsigned int);
 asmlinkage long fake_close(unsigned int fd) {
   printk(KERN_INFO "sys_close hooked");
   return (*real_close)(fd);
-}
-
-static void *khook_map_writable(void *addr, size_t len)
-{
-  int i;
-  void *vaddr = NULL;
-  void *paddr = (void *)((unsigned long)addr & PAGE_MASK);
-  struct page *pages[DIV_ROUND_UP(offset_in_page(addr) + len, PAGE_SIZE)];
-
-  for (i = 0; i < ARRAY_SIZE(pages); i++, paddr += PAGE_SIZE) {
-    if ((pages[i] = __module_address((unsigned long)paddr)
-	 ? vmalloc_to_page(paddr)
-	 : virt_to_page(paddr)) == NULL)
-      return NULL;
-  }
-
-  vaddr = vmap(pages, ARRAY_SIZE(pages), VM_MAP, PAGE_KERNEL);
-  return vaddr ? vaddr + offset_in_page(addr) : NULL;
 }
 
 static void search_sys_call_table(void) {
@@ -100,39 +79,26 @@ static void search_sys_call_table(void) {
 }
 
 static void hook_syscall(void) {
-  unsigned long long *addr_to_write = (unsigned long long *)khook_map_writable(sys_call_table + __NR_close, 64);
-  
   if (!sys_call_table) {
     printk(KERN_INFO "failed to hook syscall64, sys_call_table address is missing");
     return;
   }
   
-  real_close = *addr_to_write;
-  *addr_to_write = fake_close;
-  
-  /*
   write_cr0(read_cr0() & ~0x10000);
   real_close = sys_call_table[__NR_close];
   sys_call_table[__NR_close] = fake_close;
   write_cr0(read_cr0() | 0x10000);
-  */
 }
 
 static void unhook_syscall(void) {
-  unsigned long long *addr_to_write = (unsigned long long *)khook_map_writable(sys_call_table + __NR_close, 64);
-  
   if (!sys_call_table) {
     printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
     return;
   }
-
-  *addr_to_write = real_close;
   
-  /*
   write_cr0(read_cr0() & ~0x10000);
   sys_call_table[__NR_close] = real_close;
   write_cr0(read_cr0() | 0x10000);
-  */
 }
 
 int init_module(void) {
