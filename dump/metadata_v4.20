@@ -1,3 +1,0 @@
-ffffffff81002400 T do_syscall_64
-ffffffff81c00000 T entry_SYSCALL_64
-ffffffff82000100 R sys_call_table
