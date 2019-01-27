@@ -10,7 +10,7 @@ MODULE_LICENSE("GPL");
 static void **sys_call_table;
 static void **ia32_sys_call_table;
 
-asmlinkage long(*real_close)(unsigned int);
+asmlinkage long (*real_close)(unsigned int);
 
 asmlinkage long fake_close(unsigned int fd) {
   printk(KERN_INFO "sys_close hooked");
@@ -22,7 +22,7 @@ static void search_sys_call_table(void) {
   int *do_syscall_64_offset;
   int *sys_call_table_offset;
   int *ia32_sys_call_table_offset;
-  unsigned char *entry_SYSCALL_64 = (unsigned char*)native_read_msr(MSR_LSTAR);
+  unsigned char *entry_SYSCALL_64 = (unsigned char *)native_read_msr(MSR_LSTAR);
   unsigned char *do_syscall_64;
   unsigned char pattern_0[] = {0x48, 0x89, 0xc7, 0x48, 0x89, 0xe6, 0xe8};
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc7, 0x48};
