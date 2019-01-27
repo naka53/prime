@@ -2,7 +2,7 @@
 
 Linux kernel rootkit for kernel version 4.[17-20]
 
-### Looking for entry_SYSCALL_64 address
+### Looking for entry_SYSCALL_64 address (arch/x86/kernel/cpu/common.c)  
 ```
 4.17  
 if (static_cpu_has(X86_FEATURE_PTI))  
@@ -23,7 +23,7 @@ if (static_cpu_has(X86_FEATURE_PTI))
 		wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);  
 		
 4.20  
-wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64); (arch/x86/kernel/cpu/common.c)  
+wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);
 ```
 
 ### Looking for call to do_syscall_64 in entry_SYSCALL_64 (arch/x86/entry/entry_64.S)
