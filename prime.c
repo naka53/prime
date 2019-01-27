@@ -2,6 +2,9 @@
 #include <linux/module.h>
 #include <linux/unistd.h>
 
+#include <linux/vmalloc.h>
+#include <linux/mm.h>
+
 MODULE_LICENSE("GPL");
 
 #define SEARCH_RANGE 512
@@ -17,8 +20,6 @@ asmlinkage long fake_close(unsigned int fd) {
   return (*real_close)(fd);
 }
 
-#include <linux/vmalloc.h>
-#include <linux/mm.h>
 static void *khook_map_writable(void *addr, size_t len)
 {
   int i;
@@ -99,12 +100,13 @@ static void search_sys_call_table(void) {
 }
 
 static void hook_syscall(void) {
+  unsigned long long *addr_to_write = (unsigned long long *)khook_map_writable(sys_call_table + __NR_close, 64);
+  
   if (!sys_call_table) {
     printk(KERN_INFO "failed to hook syscall64, sys_call_table address is missing");
     return;
   }
   
-  void *addr_to_write = khook_map_writable(sys_call_table + __NR_close, 64);
   real_close = *addr_to_write;
   *addr_to_write = fake_close;
   
@@ -117,12 +119,13 @@ static void hook_syscall(void) {
 }
 
 static void unhook_syscall(void) {
+  unsigned long long *addr_to_write = (unsigned long long *)khook_map_writable(sys_call_table + __NR_close, 64);
+  
   if (!sys_call_table) {
     printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
     return;
   }
 
-  void *addr_to_write = khook_map_writable(sys_call_table + __NR_close, 64);
   *addr_to_write = real_close;
   
   /*
