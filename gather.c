@@ -1,7 +1,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
-#define DUMP_SIZE 1024
+#define DUMP_SIZE 512
 
 MODULE_LICENSE("GPL");
 
@@ -37,6 +37,8 @@ int init_module(void) {
 	   do_syscall_64[i + 5],
 	   do_syscall_64[i + 6],
 	   do_syscall_64[i + 7]);
+
+  return 0;
 }
 
 void cleanup_module(void) {
