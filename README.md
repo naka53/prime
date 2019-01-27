@@ -2,27 +2,21 @@
 
 Linux kernel rootkit for kernel version 4.[17-20]
 
-### Looking for entry_SYSCALL_64 address (arch/x86/kernel/cpu/common.c)  
+### Looking for entry_SYSCALL_64 address  
 ```
-4.17  
-if (static_cpu_has(X86_FEATURE_PTI))  
-		wrmsrl(MSR_LSTAR, SYSCALL64_entry_trampoline);  
-	else  
-		wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);  
-		
-4.18  
-if (static_cpu_has(X86_FEATURE_PTI))  
-		wrmsrl(MSR_LSTAR, SYSCALL64_entry_trampoline);  
-	else  
-		wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);  
-		
-4.19  
-if (static_cpu_has(X86_FEATURE_PTI))  
-		wrmsrl(MSR_LSTAR, SYSCALL64_entry_trampoline);  
-	else  
-		wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);  
-		
-4.20  
+4.17 (arch/x86/entry/entry_64.S)  
+EXPORT_SYMBOL(native_load_gs_index)  
+offset between entry_SYSCALL_64 and native_load_gs_index : 3392  
+
+4.18 (arch/x86/entry/entry_64.S)  
+EXPORT_SYMBOL(native_load_gs_index)  
+offset between entry_SYSCALL_64 and native_load_gs_index : 3392  
+
+4.19 (arch/x86/entry/entry_64.S)  
+EXPORT_SYMBOL(native_load_gs_index)  
+offset between entry_SYSCALL_64 and native_load_gs_index : 3392  
+
+4.20 (arch/x86/kernel/cpu/common.c)  
 wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);
 ```
 
