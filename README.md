@@ -13,6 +13,15 @@ e8 ?? ?? ?? ??  callq [offset]
 
 pattern detection
 ```
+
+```
+### Looking for sys_call_table offset in do_syscall_64 (arch/x86/entry/common.c)
+```
+48 8b 04 fd ?? ?? ?? ?? mov [offset](, %rdi, 8), %rax
+```
+
+pattern detection
+```
 4.17  
 48 81 ff 4d 01 00 00  cmp $0x14d, %rdi  
 48 19 c0              sbb %rax, %rax  
@@ -33,16 +42,6 @@ pattern detection
 48 19 c0              sbb %rax, %rax  
 48 21 c7              and %rax, %rdi  
 ```
-### Looking for sys_call_table offset in do_syscall_64 (arch/x86/entry/common.c)
-```
-48 8b 04 fd ?? ?? ?? ?? mov [offset](, %rdi, 8), %rax
-```
-
-pattern detection
-```
-48 19 c0    sbb %rax, %rax  
-48 21 c7    and %rax, %rax  
-```
 
 ### Looking for ia32_sys_call_table offset in do_syscall_32_irqs_on (arch/x86/entry/common.c)
 ```
@@ -51,16 +50,31 @@ pattern detection
 
 pattern detection
 ```
-v4.17  
-48 19 d2    sbb %rdx, %rdx  
-21 d0       and %edx, %eax  
-v4.[18-20]  
-48 19 d2    sbb %rdx, %rdx  
-21 d0       and %edx, %eax  
-48 89 ef    mov %rbp, %rdi  
+4.17  
+48 81 fa 81 01 00 00  cmp $0x181, %rdx  
+48 19 d2              sbb %rdx, %rdx  
+21 d0                 and %edx, %eax  
+
+4.18  
+48 81 fa 83 01 00 00  cmp $0x183, %rdx  
+48 19 d2              sbb %rdx, %rdx  
+21 d0                 and %edx, %eax  
+48 89 ef              mov %rbp, %rdi  
+
+4.19  
+48 81 fa 83 01 00 00  cmp $0x183, %rdx  
+48 19 d2              sbb %rdx, %rdx  
+21 d0                 and %edx, %eax  
+48 89 ef              mov %rbp, %rdi  
+
+4.20  
+48 81 fa 83 01 00 00  cmp $0x182, %eax  
+48 19 d2              sbb %rdx, %rdx  
+21 d0                 and %edx, %eax  
+48 89 ef              mov %rbp, %rdi  
 ```
 
 ### References
+https://0xax.gitbooks.io/linux-insides/content/SysCall/linux-syscall-1.html  
 https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S  
 https://github.com/torvalds/linux/blob/master/arch/x86/entry/common.c  
-https://0xax.gitbooks.io/linux-insides/content/SysCall/linux-syscall-1.html  
