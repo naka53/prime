@@ -13,7 +13,29 @@ e8 ?? ?? ?? ??  callq [offset]
 
 pattern detection
 ```
+4.17  
+41 57                 push %r15  
+45 31 ff              xor %r15d, %r15d  
+48 89 c7              mov %rax, %rdi  
+48 89 e6              mov %rsp, %rsi  
 
+4.18  
+41 57                 push %r15  
+45 31 ff              xor %r15d, %r15d  
+48 89 c7              mov %rax, %rdi  
+48 89 e6              mov %rsp, %rsi  
+
+4.19  
+41 57                 push %r15  
+45 31 ff              xor %r15d, %r15d  
+48 89 c7              mov %rax, %rdi  
+48 89 e6              mov %rsp, %rsi  
+
+4.20  
+41 57                 push %r15  
+45 31 ff              xor %r15d, %r15d  
+48 89 c7              mov %rax, %rdi  
+48 89 e6              mov %rsp, %rsi  
 ```
 ### Looking for sys_call_table offset in do_syscall_64 (arch/x86/entry/common.c)
 ```
