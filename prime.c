@@ -10,11 +10,11 @@ MODULE_LICENSE("GPL");
 static void **sys_call_table;
 static void **ia32_sys_call_table;
 
-asmlinkage long (*real_close)(unsigned int);
+asmlinkage long (*real_close)(struct pt_regs *);
 
-asmlinkage long fake_close(unsigned int fd) {
+asmlinkage long fake_close(struct pt_regs *regs) {
   printk(KERN_INFO "sys_close hooked");
-  return (*real_close)(fd);
+  return (*real_close)(regs);
 }
 
 static void search_sys_call_table(void) {
