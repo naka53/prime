@@ -109,6 +109,6 @@ int init_module(void) {
 }
 
 void cleanup_module(void) {
-  printk(KERN_INFO "prime module stopped");
   unhook_syscall();
+  printk(KERN_INFO "prime module stopped");
 }
