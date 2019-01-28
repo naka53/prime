@@ -1,64 +1,66 @@
-Jan 28 19:21:15 debian kernel: [  163.692709] ffffffff811b0ca0 : 65 48 8b 04 25 40 4d 01
-Jan 28 19:21:15 debian kernel: [  163.692709] ffffffff811b0ca8 : 00 48 8b 77 70 48 8b b8
-Jan 28 19:21:15 debian kernel: [  163.692789] ffffffff811b0cb0 : 68 06 00 00 e8 77 25 02
-Jan 28 19:21:15 debian kernel: [  163.692792] ffffffff811b0cb8 : 00 48 63 d0 48 c7 c0 fc
-Jan 28 19:21:15 debian kernel: [  163.692795] ffffffff811b0cc0 : ff ff ff 8d 8a 01 02 00
-Jan 28 19:21:15 debian kernel: [  163.692798] ffffffff811b0cc8 : 00 83 f9 01 76 0f 89 d1
-Jan 28 19:21:15 debian kernel: [  163.692801] ffffffff811b0cd0 : 83 e1 fd 81 f9 fc fd ff
-Jan 28 19:21:15 debian kernel: [  163.692804] ffffffff811b0cd8 : ff 48 0f 45 c2 f3 c3 90
-Jan 28 19:21:15 debian kernel: [  163.692807] ffffffff811b0ce0 : 55 53 48 83 ec 08 48 8b
-Jan 28 19:21:15 debian kernel: [  163.692810] ffffffff811b0ce8 : 7f 70 e8 91 31 02 00 48
-Jan 28 19:21:15 debian kernel: [  163.692813] ffffffff811b0cf0 : 89 c3 48 c7 c0 f7 ff ff
-Jan 28 19:21:15 debian kernel: [  163.692822] ffffffff811b0cf8 : ff 48 89 dd 48 83 e5 fc
-Jan 28 19:21:15 debian kernel: [  163.692825] ffffffff811b0d00 : 74 30 48 8b 45 18 8b 10
-Jan 28 19:21:15 debian kernel: [  163.692827] ffffffff811b0d08 : 48 c7 c0 ec ff ff ff 81
-Jan 28 19:21:15 debian kernel: [  163.692830] ffffffff811b0d10 : e2 00 00 70 00 81 fa 00
-Jan 28 19:21:15 debian kernel: [  163.692833] ffffffff811b0d18 : 00 20 00 74 1c 83 e3 01
-Jan 28 19:21:15 debian kernel: [  163.692835] ffffffff811b0d20 : 74 10 48 89 ef 48 89 04
-Jan 28 19:21:15 debian kernel: [  163.692838] ffffffff811b0d28 : 24 e8 52 5b 00 00 48 8b
-Jan 28 19:21:15 debian kernel: [  163.692841] ffffffff811b0d30 : 04 24 48 83 c4 08 5b 5d
-Jan 28 19:21:15 debian kernel: [  163.692844] ffffffff811b0d38 : c3 48 8b 7d 20 be 41 00
-Jan 28 19:21:15 debian kernel: [  163.692846] ffffffff811b0d40 : 00 00 e8 a9 ed 00 00 85
-Jan 28 19:21:15 debian kernel: [  163.692849] ffffffff811b0d48 : c0 74 04 48 98 eb ce 65
-Jan 28 19:21:15 debian kernel: [  163.692852] ffffffff811b0d50 : 48 8b 04 25 40 4d 01 00
-Jan 28 19:21:15 debian kernel: [  163.692854] ffffffff811b0d58 : 48 8b b8 60 06 00 00 48
-Jan 28 19:21:15 debian kernel: [  163.692857] ffffffff811b0d60 : 8d 75 10 e8 c8 7a 03 00
-Jan 28 19:21:15 debian kernel: [  163.692860] ffffffff811b0d68 : 31 c0 eb b1 0f 1f 40 00
-Jan 28 19:21:15 debian kernel: [  163.692862] ffffffff811b0d70 : 41 56 41 55 49 89 d5 41
-Jan 28 19:21:15 debian kernel: [  163.692865] ffffffff811b0d78 : 54 4c 8d 67 10 55 53 48
-Jan 28 19:21:15 debian kernel: [  163.692868] ffffffff811b0d80 : 89 f5 48 89 fb 4c 89 e7
-Jan 28 19:21:15 debian kernel: [  163.692871] ffffffff811b0d88 : e8 23 e0 00 00 48 89 6b
-Jan 28 19:21:15 debian kernel: [  163.692873] ffffffff811b0d90 : 20 48 8b 7d 30 48 89 bb
-Jan 28 19:21:15 debian kernel: [  163.692876] ffffffff811b0d98 : f0 00 00 00 48 83 ef 80
-Jan 28 19:21:15 debian kernel: [  163.692879] ffffffff811b0da0 : e8 eb d5 1d 00 f6 43 42
-Jan 28 19:21:15 debian kernel: [  163.692881] ffffffff811b0da8 : 20 89 83 f8 00 00 00 0f
-Jan 28 19:21:15 debian kernel: [  163.692884] ffffffff811b0db0 : 85 39 02 00 00 f6 43 44
-Jan 28 19:21:15 debian kernel: [  163.692891] ffffffff811b0db8 : 02 74 69 0f b7 55 00 89
-Jan 28 19:21:15 debian kernel: [  163.692894] ffffffff811b0dc0 : d0 66 81 e2 00 b0 66 25
-Jan 28 19:21:15 debian kernel: [  163.692898] ffffffff811b0dc8 : 00 f0 66 81 fa 00 20 0f
-Jan 28 19:21:15 debian kernel: [  163.692902] ffffffff811b0dd0 : 95 c1 66 3d 00 10 0f 95
-Jan 28 19:21:15 debian kernel: [  163.692905] ffffffff811b0dd8 : c2 84 d1 74 4f 66 3d 00
-Jan 28 19:21:15 debian kernel: [  163.692909] ffffffff811b0de0 : c0 74 49 8b 85 48 01 00
-Jan 28 19:21:15 debian kernel: [  163.692912] ffffffff811b0de8 : 00 48 8d 8d 48 01 00 00
-Jan 28 19:21:15 debian kernel: [  163.692916] ffffffff811b0df0 : 85 c0 0f 88 25 02 00 00
-Jan 28 19:21:15 debian kernel: [  163.692920] ffffffff811b0df8 : 8d 50 01 f0 0f b1 95 48
-Jan 28 19:21:15 debian kernel: [  163.692924] ffffffff811b0e00 : 01 00 00 0f 85 1f 02 00
-Jan 28 19:21:15 debian kernel: [  163.692926] ffffffff811b0e08 : 00 48 8b 7b 10 e8 be 51
-Jan 28 19:21:15 debian kernel: [  163.692929] ffffffff811b0e10 : 02 00 85 c0 41 89 c6 0f
-Jan 28 19:21:15 debian kernel: [  163.692932] ffffffff811b0e18 : 85 34 02 00 00 81 4b 44
-Jan 28 19:21:15 debian kernel: [  163.692935] ffffffff811b0e20 : 00 00 01 00 0f b7 45 00
-Jan 28 19:21:15 debian kernel: [  163.692937] ffffffff811b0e28 : 66 25 00 f0 66 2d 00 40
-Jan 28 19:21:15 debian kernel: [  163.692940] ffffffff811b0e30 : 66 a9 00 b0 0f 84 95 00
-Jan 28 19:21:15 debian kernel: [  163.692943] ffffffff811b0e38 : 00 00 48 8b 85 50 01 00
-Jan 28 19:21:15 debian kernel: [  163.692945] ffffffff811b0e40 : 00 48 85 c0 74 77 48 8b
-Jan 28 19:21:15 debian kernel: [  163.692948] ffffffff811b0e48 : 38 e8 42 34 f3 ff 84 c0
-Jan 28 19:21:15 debian kernel: [  163.692951] ffffffff811b0e50 : 74 6b 48 8b 85 50 01 00
-Jan 28 19:21:15 debian kernel: [  163.692953] ffffffff811b0e58 : 00 48 85 c0 48 89 43 28
-Jan 28 19:21:15 debian kernel: [  163.692956] ffffffff811b0e60 : 74 63 48 89 df e8 96 3c
-Jan 28 19:21:15 debian kernel: [  163.692959] ffffffff811b0e68 : 16 00 85 c0 41 89 c6 74
-Jan 28 19:21:15 debian kernel: [  163.692962] ffffffff811b0e70 : 7c 45 85 f6 0f 8f 92 01
-Jan 28 19:21:15 debian kernel: [  163.692964] ffffffff811b0e78 : 00 00 48 8b 43 28 48 85
-Jan 28 19:21:15 debian kernel: [  163.692967] ffffffff811b0e80 : c0 74 08 48 8b 38 e8 c5
-Jan 28 19:21:15 debian kernel: [  163.692970] ffffffff811b0e88 : 28 f3 ff f6 43 46 01 75
-Jan 28 19:21:15 debian kernel: [  163.692972] ffffffff811b0e90 : 4a 4c 89 e7 e8 e7 df 00
-Jan 28 19:21:17 debian kernel: [  163.692975] ffffffff811b0e98 : 00 48 c7 43 10 00 00 00
+[kernel 4.20]sys_close 0xffffffff811b0ca0
+
+65 48 8b 04 25 40 4d 01
+00 48 8b 77 70 48 8b b8
+68 06 00 00 e8 77 25 02
+00 48 63 d0 48 c7 c0 fc
+ff ff ff 8d 8a 01 02 00
+00 83 f9 01 76 0f 89 d1
+83 e1 fd 81 f9 fc fd ff
+ff 48 0f 45 c2 f3 c3 90
+55 53 48 83 ec 08 48 8b
+7f 70 e8 91 31 02 00 48
+89 c3 48 c7 c0 f7 ff ff
+ff 48 89 dd 48 83 e5 fc
+74 30 48 8b 45 18 8b 10
+48 c7 c0 ec ff ff ff 81
+e2 00 00 70 00 81 fa 00
+00 20 00 74 1c 83 e3 01
+74 10 48 89 ef 48 89 04
+24 e8 52 5b 00 00 48 8b
+04 24 48 83 c4 08 5b 5d
+c3 48 8b 7d 20 be 41 00
+00 00 e8 a9 ed 00 00 85
+c0 74 04 48 98 eb ce 65
+48 8b 04 25 40 4d 01 00
+48 8b b8 60 06 00 00 48
+8d 75 10 e8 c8 7a 03 00
+31 c0 eb b1 0f 1f 40 00
+41 56 41 55 49 89 d5 41
+54 4c 8d 67 10 55 53 48
+89 f5 48 89 fb 4c 89 e7
+e8 23 e0 00 00 48 89 6b
+20 48 8b 7d 30 48 89 bb
+f0 00 00 00 48 83 ef 80
+e8 eb d5 1d 00 f6 43 42
+20 89 83 f8 00 00 00 0f
+85 39 02 00 00 f6 43 44
+02 74 69 0f b7 55 00 89
+d0 66 81 e2 00 b0 66 25
+00 f0 66 81 fa 00 20 0f
+95 c1 66 3d 00 10 0f 95
+c2 84 d1 74 4f 66 3d 00
+c0 74 49 8b 85 48 01 00
+00 48 8d 8d 48 01 00 00
+85 c0 0f 88 25 02 00 00
+8d 50 01 f0 0f b1 95 48
+01 00 00 0f 85 1f 02 00
+00 48 8b 7b 10 e8 be 51
+02 00 85 c0 41 89 c6 0f
+85 34 02 00 00 81 4b 44
+00 00 01 00 0f b7 45 00
+66 25 00 f0 66 2d 00 40
+66 a9 00 b0 0f 84 95 00
+00 00 48 8b 85 50 01 00
+00 48 85 c0 74 77 48 8b
+38 e8 42 34 f3 ff 84 c0
+74 6b 48 8b 85 50 01 00
+00 48 85 c0 48 89 43 28
+74 63 48 89 df e8 96 3c
+16 00 85 c0 41 89 c6 74
+7c 45 85 f6 0f 8f 92 01
+00 00 48 8b 43 28 48 85
+c0 74 08 48 8b 38 e8 c5
+28 f3 ff f6 43 46 01 75
+4a 4c 89 e7 e8 e7 df 00
+00 48 c7 43 10 00 00 00
