@@ -1,5 +1,6 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/slab.h>
 #include <linux/unistd.h>
 
 MODULE_LICENSE("GPL");
@@ -9,6 +10,8 @@ MODULE_LICENSE("GPL");
 
 static void **sys_call_table;
 static void **ia32_sys_call_table;
+static void **sys_call_table_prime;
+static int *sys_call_table_offset;
 
 asmlinkage long (*real_close)(struct pt_regs *);
 
@@ -20,7 +23,6 @@ asmlinkage long fake_close(struct pt_regs *regs) {
 static void search_sys_call_table(void) {
   int i, j;
   int *do_syscall_64_offset;
-  int *sys_call_table_offset;
   int *ia32_sys_call_table_offset;
   unsigned char *entry_SYSCALL_64 = (unsigned char *)native_read_msr(MSR_LSTAR);
   unsigned char *do_syscall_64;
@@ -90,6 +92,29 @@ static void hook_syscall(void) {
   write_cr0(read_cr0() | 0x10000);
 }
 
+static void clone_sys_call_table(void) {
+  int i;
+  
+  if (!sys_call_table) {
+    printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
+    return;
+  }
+
+  sys_call_table_prime = kmalloc(sizeof(void *) * __NR_syscalls, GFP_KERNEL);
+  if (!sys_call_table_prime) {
+    printk(KERN_INFO "failed to clone sys_call_table");
+    return;
+  }
+
+  for (i = 0; i < __NR_syscalls; i++)
+    sys_call_table_prime[i] = sys_call_table[i];
+
+  real_close = sys_call_table_prime[__NR_close];
+  sys_call_table_prime[__NR_close] = fake_close;
+
+  *sys_call_table_offset = (int)sys_call_table_prime;
+}
+
 static void unhook_syscall(void) {
   if (!sys_call_table) {
     printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
@@ -101,14 +126,26 @@ static void unhook_syscall(void) {
   write_cr0(read_cr0() | 0x10000);
 }
 
+static void unclone_sys_call_table(void) {
+  if (!sys_call_table) {
+    printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
+    return;
+  }
+
+  *sys_call_table_offset = (int)sys_call_table;
+  kfree(sys_call_table_prime);
+}
+
 int init_module(void) {
   printk(KERN_INFO "prime module started");
   search_sys_call_table();
-  hook_syscall();
+  //hook_syscall();
+  clone_sys_call_table();
   return 0;
 }
 
 void cleanup_module(void) {
-  unhook_syscall();
+  //unhook_syscall();
+  unclone_sys_call_table();
   printk(KERN_INFO "prime module stopped");
 }
