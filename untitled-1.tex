@@ -24,9 +24,11 @@ Il y a deux types de rootkit. Les rootkits qui opèrent dans l'espace utilisateu
 
 La table des appels systèmes est un tableau qui contient toutes les adresses mémoires des différents appels systèmes. Ces appels systèmes permettent aux programmes de l'espace utilisateur de communiquer avec le noyau. Ils sont indispensables pour les programmes de l'espace utilisateur pour utiliser des fonctions que seul le noyau peut exécuter. Un rootkit a la possibilité de retrouver cette table pour modifier certaines adresses et remplacer les appels systèmes par ses propres fonctions. Avec ce procédé, le rootkit peut choisir quelles informations retourner aux programmes de l'espace utilisateur et altérer le fonctionnement de la machine.
 
-Jusqu'à la version 4.17 du noyau Linux, la majorité des rootkits utilisaient une seule et même tehnique pour accéder à cette table et la modifier. Le noyau Linux exportait l'adresse de l'appel système \textit{sys\_close()}. C'est à dire que l'adresse de cet appel système était accessible directement par n'importe quel module du noyau Linux. Il suffisait par brute-force de trouver dans la mémoire du noyau à quels endroits étaient présente cette adresse. Ainsi on retrouvait facilement la table des appels systèmes.
+Pour éviter ce type d'attaque une sécurité majeure existe, la  KASLR (Kernel Address Space Layout Randomization). C'est à dire que les différentes parties du code du noyau son répartie aléatoirement dans la mémoire. Ceci à chaque démarrage du système. Elle existe depuis la version 3.14 du noyau Linux mais nécessitait d'être activée et de recompiler le noyau. Récemment, depuis la version 4.12, elle est activée par défaut.
 
-\section{Patch Linux kernel 4.17}
+Jusqu'à la version 4.17 du noyau Linux, la majorité des rootkits utilisaient une seule et même tehnique pour passer outre la KASLR et accéder à la table des appels système. Le noyau Linux exportait l'adresse de l'appel système \textit{sys\_close()}. C'est à dire que l'adresse de cet appel système était accessible directement par n'importe quel module du noyau Linux. Il suffisait par brute-force de trouver dans la mémoire du noyau à quels endroits étaient présente cette adresse. Ainsi on retrouvait facilement la table des appels systèmes.
+
+\section{Linux kernel 4.17}
 
 La faille qui permettait aux rootkits de retrouver la table des appels système résidait dans l'export de l'adresse de l'appel système \textit{sys\_close()}. Cela était nécessaire car le module \textit{mount}, qui permet de gérer le système de fichier, avait besoin de cet appel système. Un correctif a été appliqué au noyau Linux dans la version 4.17 afin d'empêcher les rootkits de l'espace noyau de retrouver l'adresse de la table des appels systèmes à l'aide de l'adresse de \textit{sys\_close()}. 
 
@@ -37,8 +39,6 @@ Tout d'abord l'export de l'adresse de l'appel système a été supprimé. On a d
 Il est donc maintenant nécessaire de trouver une autre façon de faire que l'adresse de l'appel système \textit{sys\_close()} pour retrouver l'adresse de la table des appels système.
 
 \section{Déterminer l'adresse de la sys\_call\_table}
-
-L'adresse mémoire de la sys\_call\_table est aléatoire et change à chaque démarrage du système. Ceci est dû à une sécurité du noyau Linux appelée KASLR (Kernel Address Space Layout Randomization). Elle existe depuis la version 3.14 du noyau Linux mais nécessitait d'être activée et de recompiler le noyau. Récemment, depuis la version 4.12, elle est activée par défaut.
 
 L'idée pour atteindre la sys\_call\_table tout en ayant la KASLR activée, est de trouver un point d'accroche avec du code qui utilise la sys\_call\_table. Le premier endroit où regarder est du côté des routines qui initialisent la sys\_call\_table ou qui gèrent les appels systèmes.
 
