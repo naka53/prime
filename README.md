@@ -111,7 +111,8 @@ pattern detection
 ```
 
 ### References
-https://0xax.gitbooks.io/linux-insides/content/SysCall/
+https://0xax.gitbooks.io/linux-insides/content/SysCall/  
 https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c  
 https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S  
 https://github.com/torvalds/linux/blob/master/arch/x86/entry/common.c  
+https://github.com/torvalds/linux/commit/2ca2a09d6215fd9621aa3e2db7cc9428a61f2911#diff-acc7893dfa77092a11e1b53e98a34d44  
