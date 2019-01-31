@@ -116,4 +116,5 @@ https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c
 https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S  
 https://github.com/torvalds/linux/blob/master/arch/x86/entry/common.c  
 https://github.com/torvalds/linux/commit/2ca2a09d6215fd9621aa3e2db7cc9428a61f2911#diff-acc7893dfa77092a11e1b53e98a34d44  
-https://github.com/torvalds/linux/commit/bf904d2762ee6fc1e4acfcb0772bbfb4a27ad8a6#diff-ebc0521fec74b465090151aabc564493
+https://github.com/torvalds/linux/commit/bf904d2762ee6fc1e4acfcb0772bbfb4a27ad8a6#diff-ebc0521fec74b465090151aabc564493  
+https://github.com/torvalds/linux/commit/f8781c4a226319fe60e652118b90cf094ccfe747#diff-4655f345e095506d5fd4c2af0c209d5e
