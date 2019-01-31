@@ -1,4 +1,4 @@
-obj-m += prime.o gather.o
+obj-m += Atra.o
 
 all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
