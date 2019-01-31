@@ -1,6 +1,11 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/unistd.h>
+#include <asm/pgtable.h>
+#include <asm/tlbflush.h>
+#include <linux/gfp.h>
+#include <asm/io.h>
+#include <linux/slab.h>
 
 MODULE_LICENSE("GPL");
 
@@ -54,7 +59,7 @@ static void search_sys_call_table(void) {
     if (j == PATTERN_SIZE) {
       sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_SIZE + 3);
       sys_call_table = (void **)(*sys_call_table_offset);
-      printk(KERN_INFO "call to sys_call_table at %p (%p)", do_syscall_64 + i + PATTERN_SIZE - 1, sys_call_table); 
+      printk(KERN_INFO "call to sys_call_table at %p (%llx)", do_syscall_64 + i + PATTERN_SIZE - 1, (unsigned long long)sys_call_table); 
       break;
     } 
   }
@@ -76,6 +81,19 @@ static void search_sys_call_table(void) {
 
   if (!ia32_sys_call_table)
     printk(KERN_INFO "failed to find ia32_sys_call_table address");
+
+  printk(KERN_INFO "syscall addr %llx\n",virt_to_phys((unsigned long)sys_call_table));
+  struct page * new_page,syscall_page;
+  new_page = alloc_pages(GFP_KERNEL,1);
+  unsigned long page_addr, syscall_page_addr;
+  page_addr = ((unsigned long)&new_page) & ~(PAGE_SIZE-1);
+  syscall_page_addr = ((unsigned long)sys_call_table) & (~PAGE_SIZE-1);
+  memcpy(page_addr,syscall_page_addr,sizeof(PAGE_SIZE));
+  printk(KERN_INFO "%llx %llx \n",virt_to_phys(page_addr),virt_to_phys(syscall_page_addr));
+  __flush_tlb_all();
+  update_mmu_cache(syscall_page_addr,page_addr,NULL);
+  // kfree(*sys_call_table);
+  printk(KERN_INFO "fin\n");
 }
 
 static void hook_syscall(void) {
@@ -104,11 +122,11 @@ static void unhook_syscall(void) {
 int init_module(void) {
   printk(KERN_INFO "prime module started");
   search_sys_call_table();
-  hook_syscall();
+ // hook_syscall();
   return 0;
 }
 
 void cleanup_module(void) {
   printk(KERN_INFO "prime module stopped");
-  unhook_syscall();
+ // unhook_syscall();
 }
