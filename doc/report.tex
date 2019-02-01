@@ -39,11 +39,13 @@
 
 \section{Introduction}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Les rootkits représentent une catégorie des malwares largement répandus et qui peuvent causer des dommages importants aux machines qu'ils visent. Dans ce rapport nous nous intéresserons à leur fonctionnement et plus précisément comment ils s'installent dans le système pour altérer le comportement de la machine.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+Jusqu'à la version 4.16 du noyau Linux tous les rootkits utilisaient la même technique pour s'implanter dans le système depuis plus d'une décennie. Est ensuite venu le correctif 4.17 qui a corrigé la faille et laissé la communauté sans solution immédiate. Jusqu'ici nous n'avons pas trouvé de traces de solutions fonctionnelles disponibles publiquement. Dans la suite de ce rapport nous exposerons nos recherches permettants de faire tourner un rootkit sur les versions récentes du noyau avec toutes les sécurités de base.
 
-Blablabla Avant 4.17 telle façon, blablabla, marche plus, blablabla, nouvelle manière sur noyau récent, blablabla, différence avec ancienne, blablabla
+Dans un premier temps nous ferons un rapide tour des notions principales et de l'état de l'art des rootkits. Nous verrons en détails les changements opérés dans la version 4.17 du noyau.
+Dans un second temps nous exposerons une technique qui permet d'installer un rootkit sur les versions récentes du noyau avec quelques détails sur l'implémentation.
+Pour finir nous aborderons une façon plus discrète d'altérer le fonctionnement du système pour que notre rootkit soit plus difficile à détecter.
 
 \section{Notions et état de l'art}
 
@@ -63,7 +65,7 @@ Parmi les nombres modifications apportées par la version 4.17 du noyau Linux, u
 
 Tout d'abord l'export de l'appel système a été supprimé. On a donc perdu le point d'accroche. Pour que le module \textit{mount} puisse continuer à fonctionner normalement il a été prévu une fonction pour remplacer l'appel système. Cette fonction remplace l'appel système \textit{sys\_close()} pour les programmes de l'espace noyau.
 
- Plus généralement dans le noyau, plusieurs modules utilisaient les appels systèmes avant la 4.17. Les développeurs noyaux veulent éviter au maximum cela car ces appels systèmes sont avant tout destinés à l'espace utilisateur. Si jamais il était absolument nécessaire d'utiliser un appel système dans l'espace noyau, une fonction de remplacement de la forme \textit{ksys\_xyzxyz()} a été mise en place. Elle fonctionne de façon similaire à l'appel système qu'elle remplace. Ceci évite que l'adresse d'un appel système soit présente dans le noyau.
+ Plus généralement dans le noyau, plusieurs modules utilisaient les appels systèmes avant la 4.17. Les développeurs noyaux veulent éviter au maximum cela car ces appels systèmes sont avant tout destinés à l'espace utilisateur. Si jamais il était absolument nécessaire d'utiliser un appel système dans l'espace noyau, une fonction de remplacement de la forme \textit{ksys\_xyzxyz()} a été mise en place. Elle fonctionne de façon similaire à l'appel système qu'elle remplace. Ce changement a 2 conséquences. La première est que les adresses des appels système ne sont plus présents dans le noyau. La deuxième c'est qu'il n'est plus possible de "hook" les appels systèmes venants du noyau. C'est à dire qu'il n'est plus possible d'altérer le comportement des programmes présents dans l'espace noyau de la même manière qu'avant.
 
 Il est donc maintenant nécessaire de trouver une autre façon de faire pour retrouver l'adresse de la table des appels système que d'utiliser l'adresse d'un appel système.
 
@@ -273,7 +275,7 @@ Les patterns qui précèdent ce \textit{mov} sont les suivants :
 \end{lstlisting}
 On a donc une attaque qui permet de retrouver l'adresse de la \textit{sys\_call\_table} et de \textit{ia32\_sys\_call\_table} avec la KASLR activée. Elle a été testée avec succès sur les versions 4.17 à 4.20 ainsi que 5.0-rc3. Rien n'indique qu'elle ne pourrait pas fonctionner sur d'autres versions. Les seuls étapes susceptibles de changer sont le point d'accroche à la fonction \textit{entry\_SYSCALL\_64} et les patterns pour retrouver les \textit{call} et \textit{mov}.
 
-\section{Code}
+\section{Ecraser la sys\_call\_table}
 
 Nous utiliserons un LKM (Linux Kernel Module) pour faire notre rootkit. Ceci implique qu'un attaquant devra nécessairement avoir un accès \textit{root} à la machine pour y installer le rootkit.  Nous ne verrons pas en détails la fonction qui retrouve l'adresse de la \textit{sys\_call\_table} car la section précédente est assez claire à ce sujet. Néanmoins nous allons apporter quelques précisions sur comment "hook" les appels systèmes.
 
@@ -326,7 +328,6 @@ asmlinkage long fake_close(struct pt_regs *regs) {
 }
 \end{lstlisting}
 
-\newpage
 \begin{thebibliography}{}
 	\bibitem{1}
 	\href{https://0xax.gitbooks.io/linux-insides/content/SysCall/}{System calls in the Linux kernel}\\
