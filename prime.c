@@ -121,9 +121,9 @@ static void search_sys_call_table(void) {
   unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x89, 0xef, 0x48};
 
   for (i = 0; i < SEARCH_RANGE; i++) {
-    for (j = 0; j < PATTERN_SIZE; j++)
-      if (entry_SYSCALL_64[i + j] != pattern_0[j])
-	break;
+    j = 0;
+    while (j < PATTERN_SIZE && entry_SYSCALL_64[i + j] == pattern_0[j])
+      j++;
 
     if (j == PATTERN_SIZE) {
       do_syscall_64_offset = (int *)(entry_SYSCALL_64 + i + PATTERN_SIZE);
@@ -139,9 +139,9 @@ static void search_sys_call_table(void) {
   }
   
   for (i = 0; i < SEARCH_RANGE; i++) {
-    for (j = 0; j < PATTERN_SIZE; j++)
-      if (do_syscall_64[i + j] != pattern_1[j])
-	break;
+    j = 0;
+    while (j < PATTERN_SIZE && do_syscall_64[i + j] == pattern_1[j])
+      j++;
     
     if (j == PATTERN_SIZE) {
       sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_SIZE + 3);
@@ -152,10 +152,10 @@ static void search_sys_call_table(void) {
   }
 
   for ( ; i < SEARCH_RANGE; i++) {
-    for (j = 0; j < PATTERN_SIZE; j++)
-      if (do_syscall_64[i + j] != pattern_2[j])
-	break;
-
+    j = 0;
+    while (j < PATTERN_SIZE && do_syscall_64[i + j] == pattern_2[j])
+      j++;
+    
     if (j == PATTERN_SIZE) {
       ia32_sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_SIZE + 3);
       ia32_sys_call_table = (void **)(*ia32_sys_call_table_offset);
