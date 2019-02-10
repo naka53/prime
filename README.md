@@ -1,6 +1,6 @@
 # prime
 
-Linux kernel rootkit for kernel version 4.[17-20]
+Linux kernel rootkit
 
 ### Looking for entry_SYSCALL_64 address  
 ```
