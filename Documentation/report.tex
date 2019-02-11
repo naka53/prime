@@ -34,7 +34,7 @@
 	\maketitle
 
 \begin{abstract}
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+A partir de la version 4.17 du noyau Linux, la solution la plus courament utilisée pour développer un rootkit n'est plus utilisable. Nous avons donc trouvé une solution alternative pour continuer à pouvoir développer des rootkits sur des noyaux de version 4.17 ou supérieure. La méthode consiste à retracer le code exécuté en préambule d'un appel système pour retrouver un offset vers la table des appels systèmes codé dans la mémoire noyau.
 \end{abstract}
 
 \section{Introduction}
@@ -46,6 +46,8 @@ Jusqu'à la version 4.16 du noyau Linux la grande majorité des rootkits utilisa
 Dans un premier temps nous ferons un rapide tour des notions principales et de l'état de l'art des rootkits. Nous verrons en détails les changements opérés dans la version 4.17 du noyau.
 Dans un second temps nous exposerons une technique qui permet d'installer un rootkit sur les versions récentes du noyau avec quelques précisions sur l'implémentation.
 Pour finir nous verrons comment utiliser notre rootkit pour le rendre plus discret aux yeux des utilisateurs d'une machine infectée.
+
+Tous les dumps mémoires ainsi que le code du rootkit sont disponibles sur le Github en référence.
 
 \section{Notions et état de l'art}
 
@@ -357,17 +359,21 @@ Pour créer notre fonction qui va remplacer celle de base associée à l'appel s
 
 \section{Conclusion}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+A partir d'un noyau Linux de version 4.17 ou supérieure, nous avons développé une solution permettant de retrouver la table des appels systèmes. Plus précisément nous avons retracé le code exécuté en préambule d'un appel système afin de retrouver un offset vers la table des appels systèmes codé dans la mémoire noyau. A l'aide de ceci nous avons développé un "hook" de l'appel système \textit{getdents} permettant de cacher des fichiers aux utilisateurs.
 
-Répéter intro, blablabla, version 4.17 et supérieure, blablabla, mais surement possible toutes versions, blablabla.
+Nous avons décrit cette solution pour des version 4.17 à 4.20 du noyau Linux. Il n'en reste pas moins possible de suivre le même raisonnement pour n'importe quelle autre version du noyau. Quelques ajustements seront peut être nécessaires au niveau des patterns.
 
 \begin{thebibliography}{}
+	\bibitem{1}
+	\href{https://github.com/naka53/prime}{Sources}\\
+	github.com/naka53/prime\\
+
 	\bibitem{1}
 	\href{https://0xax.gitbooks.io/linux-insides/content/SysCall/}{System calls in the Linux kernel}\\
 	0xax.gitbooks.io/linux-insides/content/SysCall/\\
 
 	\bibitem{3}
-	\href{https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c}{syscall\_init()}\\
+	\href{https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c}{syscall\_init}\\
 	github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c\\
 
 	\bibitem{1}
