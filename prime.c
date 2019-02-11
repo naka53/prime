@@ -8,7 +8,6 @@
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Nathan Castets & Olivier Huge");
-MODULE_DESCRIPTION("Fallen Dragon, Peter F. Hamilton");
 
 #define SEARCH_RANGE 512
 #define PATTERN_SIZE 7
