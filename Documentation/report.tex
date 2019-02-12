@@ -96,6 +96,7 @@ Dans les version 4.17 à 4.19 la routine commence à \textit{SYSCALL64\_entry\_t
 \begin{lstlisting}[style=CStyle]
 ENTRY(entry_SYSCALL_64)
 	/* *** */
+
 	pushq	%rax
 
 	PUSH_AND_CLEAR_REGS rax=$-ENOSYS
@@ -113,6 +114,7 @@ ENTRY(entry_SYSCALL_64)
 
 	cmpq	%rcx, %r11
 	jne	swapgs_restore_regs_and_return_to_usermode
+
 	/* *** */
 \end{lstlisting}
 Une bonne partie de cette fonction est là pour gérer le passage de l'espace utilisateur à l'espace noyau et préparer la fonction associée à l'appel système. Un peu plus loin, on remarque un appel à la fonction \textit{do\_syscall\_64}. Elle va nous être utile car elle contient un appel intéressant :
@@ -120,20 +122,22 @@ Une bonne partie de cette fonction est là pour gérer le passage de l'espace ut
 \\
 /arch/x86/entry/common.c (4.17 - 4.20) :
 \begin{lstlisting}[style=CStyle]
-struct thread_info *ti;
-	enter_from_user_mode();
-	local_irq_enable();
-	ti = current_thread_info();
-	if (READ_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY)
-		nr = syscall_trace_enter(regs);
+__visible void do_syscall_64(unsigned long nr, struct pt_regs *regs)
+{
+	struct thread_info *ti;
+		enter_from_user_mode();
+		local_irq_enable();
+		ti = current_thread_info();
+		if (READ_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY)
+			nr = syscall_trace_enter(regs);
 
-	nr &= __SYSCALL_MASK;
-	if (likely(nr < NR_syscalls)) {
-		nr = array_index_nospec(nr, NR_syscalls);
-		regs->ax = sys_call_table[nr](regs);
-	}
+		nr &= __SYSCALL_MASK;
+		if (likely(nr < NR_syscalls)) {
+			nr = array_index_nospec(nr, NR_syscalls);
+			regs->ax = sys_call_table[nr](regs);
+		}
 
-	syscall_return_slowpath(regs);
+		syscall_return_slowpath(regs);
 }
 \end{lstlisting}
 On a trouvé notre appel à la \textit{sys\_call\_table} !
@@ -210,29 +214,32 @@ On a trouvé l'adresse de la \textit{sys\_call\_table}.
 
 Il est possible d'avoir en plus de l'adresse de la \textit{sys\_call\_table}, l'adresse de la table des appels système 32 bits. Elle est là pour permettre la rétro-compatibilité des binaires 32 bits. En continuant de regarder le fichier /arch/x86/entry/common.c on dans la fonction \textit{do\_syscall\_32\_irqs\_on} on observe le code suivant :
 \begin{lstlisting}[style=CStyle]
-struct thread_info *ti = current_thread_info();
-	unsigned int nr = (unsigned int)regs->orig_ax;
+static __always_inline void do_syscall_32_irqs_on(struct pt_regs *regs)
+{
+	struct thread_info *ti = current_thread_info();
+		unsigned int nr = (unsigned int)regs->orig_ax;
 
 #ifdef CONFIG_IA32_EMULATION
-	ti->status |= TS_COMPAT;
+		ti->status |= TS_COMPAT;
 #endif
-	if (READ_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY) {
-		nr = syscall_trace_enter(regs);
-	}
+		if (READ_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY) {
+			nr = syscall_trace_enter(regs);
+		}
 
-	if (likely(nr < IA32_NR_syscalls)) {
-		nr = array_index_nospec(nr, IA32_NR_syscalls);
+		if (likely(nr < IA32_NR_syscalls)) {
+			nr = array_index_nospec(nr, IA32_NR_syscalls);
 #ifdef CONFIG_IA32_EMULATION
-	regs->ax = ia32_sys_call_table[nr](regs);
+		regs->ax = ia32_sys_call_table[nr](regs);
 #else
-	regs->ax = ia32_sys_call_table[nr](
-		(unsigned int)regs->bx, (unsigned int)regs->cx,
-		(unsigned int)regs->dx, (unsigned int)regs->si,
-		(unsigned int)regs->di, (unsigned int)regs->bp);
+		regs->ax = ia32_sys_call_table[nr](
+			(unsigned int)regs->bx,(unsigned int)regs->cx,
+			(unsigned int)regs->dx,(unsigned int)regs->si,
+			(unsigned int)regs->di,(unsigned int)regs->bp);
 #endif
-	}
+		}
 
 	syscall_return_slowpath(regs);
+}
 \end{lstlisting}
 On a un appel à la table que l'on cherche (\textit{ia32\_sys\_call\_table}).
 Cette fonction étant à la suite de \textit{do\_syscall\_64}, il suffit de continuer à regarder les bytes qui succèdent la fonction. On cherche un \textit{mov} de la forme :
