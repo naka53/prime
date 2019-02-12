@@ -55,7 +55,7 @@ Un rootkit est un utilitaire qui permet d'effectuer différentes actions sur une
 
 Il y a deux types de rootkit. Les rootkits qui opèrent dans l'espace utilisateur et ceux qui opèrent dans l'espace noyau. Dans la suite de ce rapport nous nous concentrerons sur le deuxième groupe de rootkits. La majorité des rootkits qui opèrent dans l'espace noyau utilisent la table des appels systèmes (sys\_call\_table) afin d'altérer le comportement de la machine.
 
-La table des appels systèmes est un tableau qui contient toutes les adresses mémoires des différents appels systèmes. Ces appels systèmes permettent aux programmes de l'espace utilisateur de communiquer avec le noyau. Ils sont indispensables pour les programmes de l'espace utilisateur pour utiliser des fonctions que seul le noyau peut exécuter. Un rootkit a la possibilité de retrouver cette table pour modifier certaines adresses et remplacer les appels systèmes par ses propres fonctions. Avec ce procédé, le rootkit peut choisir quelles informations retourner aux programmes de l'espace utilisateur et altérer le fonctionnement de la machine.
+La table des appels systèmes est un tableau qui contient toutes les adresses mémoires des fonctions associées appels systèmes. Ces appels systèmes permettent aux programmes de l'espace utilisateur de communiquer avec le noyau. Ils sont indispensables pour les programmes de l'espace utilisateur pour utiliser des fonctions que seul le noyau peut exécuter. Un rootkit a la possibilité de retrouver cette table pour modifier certaines adresses et remplacer les appels systèmes par ses propres fonctions. Avec ce procédé, le rootkit peut choisir quelles informations retourner aux programmes de l'espace utilisateur et altérer le fonctionnement de la machine.
 
 Pour éviter ce type d'attaque une sécurité existe, la  KASLR (Kernel Address Space Layout Randomization). C'est à dire que les différentes parties du code du noyau sont réparties aléatoirement dans la mémoire. Ceci à chaque démarrage du système. Elle existe depuis la version 3.14 du noyau Linux mais nécessitait d'être activée et de recompiler le noyau. Récemment, depuis la version 4.12, elle est activée par défaut. Il est donc non trivial de retrouver l'adresse mémoire de la table des appels système.
 
@@ -95,20 +95,8 @@ Dans les version 4.17 à 4.19 la routine commence à \textit{SYSCALL64\_entry\_t
 /arch/x86/entry/entry\_64.S (4.17 - 4.20) :
 \begin{lstlisting}[style=CStyle]
 ENTRY(entry_SYSCALL_64)
-	UNWIND_HINT_EMPTY
-
-	swapgs
-	movq	%rsp, PER_CPU_VAR(cpu_tss_rw + TSS_sp2)
-	SWITCH_TO_KERNEL_CR3 scratch_reg=%rsp
-	movq	PER_CPU_VAR(cpu_current_top_of_stack), %rsp
-
-	pushq	$__USER_DS	
-	pushq	PER_CPU_VAR(cpu_tss_rw + TSS_sp2)
-	pushq	%r11	
-	pushq	$__USER_CS
-	pushq	%rcx	
-GLOBAL(entry_SYSCALL_64_after_hwframe)
-	pushq	%rax	
+	/* *** */
+	pushq	%rax
 
 	PUSH_AND_CLEAR_REGS rax=$-ENOSYS
 
@@ -125,6 +113,7 @@ GLOBAL(entry_SYSCALL_64_after_hwframe)
 
 	cmpq	%rcx, %r11
 	jne	swapgs_restore_regs_and_return_to_usermode
+	/* *** */
 \end{lstlisting}
 Une bonne partie de cette fonction est là pour gérer le passage de l'espace utilisateur à l'espace noyau et préparer la fonction associée à l'appel système. Un peu plus loin, on remarque un appel à la fonction \textit{do\_syscall\_64}. Elle va nous être utile car elle contient un appel intéressant :
 \\

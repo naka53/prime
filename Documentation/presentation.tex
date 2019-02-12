@@ -4,6 +4,31 @@
 \usetheme{Madrid}
 }
 
+\usepackage{xcolor}
+\usepackage{listings}
+
+\definecolor{mGreen}{rgb}{0,0.6,0}
+\definecolor{mGray}{rgb}{0.5,0.5,0.5}
+\definecolor{mPurple}{rgb}{0.58,0,0.82}
+\definecolor{backgroundColour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{CStyle}{
+    backgroundcolor=\color{backgroundColour},   
+    commentstyle=\color{mGreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{mGray},
+    stringstyle=\color{mPurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                                         
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C
+}
+
 \title[Linux Kernel Rootkit]{Linux Kernel Rootkit}
 
 \author{Nathan Castets \& Olivier Huge}
@@ -35,7 +60,7 @@ A la différence d'un malware classique, le rootkit se veut discret et dissimule
 
 \begin{frame}
 \frametitle{Définitions}
-Il y a 2 types de rootkit :
+Il existe 2 types de rootkit :
 \begin{itemize}
 \item 	Espace utilisateur\\
 	Remplace des fonctions utilisées par un programme\\
@@ -59,15 +84,40 @@ On appelle aussi la table des appels systèmes la \textit{sys\_call\_table}.
 
 \subsection{Pré Linux Kernel 4.17}
 
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{Pré Linux Kernel 4.17}
+/fs/open.c :
+\begin{lstlisting}[style=CStyle]
+/* *** */
 
+EXPORT_SYMBOL(sys_close);
+
+/* *** */
+\end{lstlisting}
+\medskip
+La fonction associée à l'appel système \textit{sys\_close} est accessible par n'importe quel programme présent dans le noyau.
+
+Cet export est présent car le module \textit{mount} a besoin de \textit{sys\_close}.
+
+\medskip
+Un brute-force de la mémoire noyau à la recherche des occurences de l'adresse de \textit{sys\_close} nous donne la \textit{sys\_call\_table}.
 \end{frame}
 
 \subsection{Post Linux Kernel 4.17}
 
 \begin{frame}
 \frametitle{Post Linux Kernel 4.17}
+\begin{itemize}
+\item 	Suppression de la majorité des appels systèmes dans le code noyau\\
+	L'export de la fonction \textit{sys\_close} n'existe plus\\
+\item 	Rajout de fonction avec un comportement similaire \textit{ksys\_xyzxyz()}\\
+	Le but étant de dissocier au maximum les appels venants de l'espace utilisateur et noyau
+\end{itemize}
+Cela implique :
+\begin{itemize}
+\item 	Qu'il n'est plus possible de brute-force la \textit{sys\_call\_table} à l'aide de l'adresse d'un appel système
+\item 	Qu'il n'est plus possible d'altérer le comportement de programme présent dans le noyau
+\end{itemize}
 \end{frame}
 
 \section{Notre Rootkit}
@@ -75,6 +125,58 @@ On appelle aussi la table des appels systèmes la \textit{sys\_call\_table}.
 
 \begin{frame}
 \frametitle{Déterminer l'adresse de la table des appels systèmes}
+L'idée est de s'intéresser au fonctionnement des appels systèmes et plus précisément au code exécuté en préambule pour préparer l'appel système.
+
+\medskip
+Retracer ce code dans la mémoire noyau jusqu'à retrouver un offset vers la \textit{sys\_call\_table}.
+
+\medskip
+Nous avons principalement travaillé sur les version 4.17 à 4.20 du noyau Linux pour la suite des recherches.
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Déterminer l'adresse de la table des appels systèmes}
+Dès qu'un appel système est levé, le processeur doit exécuter du code pour préparer cet appel système. L'adresse de ce code se trouve dans le registre \textit{MSR\_LSTAR}. Voyons à l'initialisation ce que contient ce registre.
+
+\medskip
+/arch/x86/kernel/cpu/common.c (4.17 - 4.19) :
+\begin{lstlisting}[style=CStyle]
+if (static_cpu_has(X86_FEATURE_PTI))
+	wrmsrl(MSR_LSTAR, SYSCALL64_entry_trampoline);
+else
+	wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);
+\end{lstlisting}
+
+\medskip
+/arch/x86/kernel/cpu/common.c (4.20) :
+\begin{lstlisting}[style=CStyle]
+wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Déterminer l'adresse de la table des appels systèmes}
+/arch/x86/entry/entry\_64.S (4.17 - 4.20) :
+\begin{lstlisting}[style=CStyle]
+ENTRY(entry_SYSCALL_64)
+	/* *** */
+	pushq	%rax
+
+	PUSH_AND_CLEAR_REGS rax=$-ENOSYS
+	TRACE_IRQS_OFF
+
+	movq	%rax, %rdi
+	movq	%rsp, %rsi
+	call	do_syscall_64
+
+	TRACE_IRQS_IRETQ
+
+	movq	RCX(%rsp), %rcx
+	movq	RIP(%rsp), %r11
+
+	cmpq	%rcx, %r11
+	jne	swapgs_restore_regs_and_return_to_usermode
+\end{lstlisting}
 \end{frame}
 
 \subsection{Hook un appel système}
