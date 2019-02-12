@@ -34,7 +34,7 @@
 	\maketitle
 
 \begin{abstract}
-A partir de la version 4.17 du noyau Linux, la solution la plus courament utilisée pour développer un rootkit n'est plus utilisable. Nous avons donc trouvé une solution alternative pour continuer à pouvoir développer des rootkits sur des noyaux de version 4.17 ou supérieure. La méthode consiste à retracer le code exécuté en préambule d'un appel système pour retrouver un offset vers la table des appels systèmes codé dans la mémoire noyau.
+A partir de la version 4.17 du noyau Linux la solution la plus courament utilisée pour trouver la table des appels systèmes, basée sur l'export de \textit{sys\_close},  n'est plus utilisable. Nous avons donc trouvé une solution alternative pour récupérer la table des appels systèmes et ainsi pouvoir continuer à développer des rootkits. Elle consiste à retracer le code exécuté en préambule d'un appel système pour retrouver un offset vers la table des appels systèmes codé dans la mémoire noyau.
 \end{abstract}
 
 \section{Introduction}
@@ -356,6 +356,8 @@ asmlinkage long sys_getdents64(unsigned int fd,
 Le préfixe \textit{\_\_user} est juste là pour mettre en garde le programmeur qui voudrait utiliser le pointeur \textit{dirent}. Celui-ci se trouve dans l'espace utilisateur et on ne peut pas lui accorder notre confiance.La structure qui nous intéresse est \textit{dirent}. Nous avons vu précédemment que l'appel à la \textit{sys\_call\_table} avait changé et que maintenant on utilisait un pointeur vers les différents registres. Si l'on veut accéder au pointeur \textit{*dirent}, il faut récupérer sa valeur dans le registre \textit{\%rsi}.
 
 Pour créer notre fonction qui va remplacer celle de base associée à l'appel système \textit{getdents}, on commence par appeler la fonction originale qui va se charger de remplir la structure avec les entrées et nous retourner le nombre de total de bytes. On recopie la suite de structure \textit{linux\_dirent} dans un buffer en espace noyau à l'aide de la fonction \textit{copy\_from\_user}. En parcourant les structures, on regarde si un \textit{MAGIC\_PREFIX} est présent dans l'attribut \textit{d\_name}. Si c'est le cas on cache la structure correspondante. On finit par recopier notre buffer en espace noyau à l'adresse de base en espace utilisateur avec la fonction \textit{copy\_to\_user}. On finit par renvoyer le nombre de bytes total comme la fonction d'origine.
+
+Cette technique peut aussi être utilisée pour cacher un processus à un utilisateur utiliant les utilitaires \textit{ps} ou \textit{top}. Ceci vient du fait que ces utilitaires vont lire les entrées du dossier \textit{/proc}. Chaque processus correspond à une entrée dans ce dossier. Si l'on dissimule une entrée, le processus correspondant ne sera pas affiché par ces utilitaires.
 
 \section{Conclusion}
 
