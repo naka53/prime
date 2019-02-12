@@ -1,0 +1,98 @@
+\documentclass{beamer}
+
+\mode<presentation> {
+\usetheme{Madrid}
+}
+
+\title[Linux Kernel Rootkit]{Linux Kernel Rootkit}
+
+\author{Nathan Castets \& Olivier Huge}
+\institute[UBX]{Université de Bordeaux}
+\date{20 Février 2019}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}
+\frametitle{Overview}
+\tableofcontents
+\end{frame}
+
+\section{Notions et état de l'art des rootkits}
+\subsection{Définitions}
+
+\begin{frame}
+\frametitle{Définitions}
+\begin{block}{Rootkit}
+Utilitaire qui permet d'effectuer différentes actions sur une machine. Le but principal est d'installer un accès privilégié à cette machine pour un pirate de façon persistante dans le temps.
+\end{block}
+\medskip
+A la différence d'un malware classique, le rootkit se veut discret et dissimule au maximum ses actions à l'utilisateur et aux programmes de surveillance.
+\end{frame}
+
+\begin{frame}
+\frametitle{Définitions}
+Il y a 2 types de rootkit :
+\begin{itemize}
+\item 	Espace utilisateur\\
+	Remplace des fonctions utilisées par un programme\\
+	Injection de librarie dynamique via \textit{LD\_PRELOAD}
+\item	Espace noyau\\
+	Remplace des appels systèmes\\
+	Module noyau qui écrase la table des appels systèmes
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Définitions}
+\begin{block}{Table des appels systèmes}
+Tableau contenant les adresses mémoires des fonctions associées aux appels systèmes. Ces appels systèmes permettent aux programmes de l'espace utilisateur de communiquer avec le noyau.
+\end{block}
+\medskip
+Les appels systèmes sont indispensables pour les programmes de l'espace utilisateur pour utiliser des fonctions que seul le noyau peut exécuter.
+
+On appelle aussi la table des appels systèmes la \textit{sys\_call\_table}.
+\end{frame}
+
+\subsection{Pré Linux Kernel 4.17}
+
+\begin{frame}
+\frametitle{Pré Linux Kernel 4.17}
+
+\end{frame}
+
+\subsection{Post Linux Kernel 4.17}
+
+\begin{frame}
+\frametitle{Post Linux Kernel 4.17}
+\end{frame}
+
+\section{Notre Rootkit}
+\subsection{Déterminer l'adresse de la table des appels systèmes}
+
+\begin{frame}
+\frametitle{Déterminer l'adresse de la table des appels systèmes}
+\end{frame}
+
+\subsection{Hook un appel système}
+
+\begin{frame}
+\frametitle{Hook un appel système}
+\end{frame}
+
+\subsection{Cacher des fichiers à l'utilisateur}
+
+\begin{frame}
+\frametitle{Cacher des fichiers à l'utilisateur}
+\end{frame}
+
+\section{Conclusion}
+
+\begin{frame}
+\frametitle{Conclusion}
+\end{frame}
+
+\end{document}
