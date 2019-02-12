@@ -363,7 +363,7 @@ Cette technique peut aussi être utilisée pour cacher un processus à un utilis
 
 A partir d'un noyau Linux de version 4.17 ou supérieure, nous avons développé une solution permettant de retrouver la table des appels systèmes. Plus précisément nous avons retracé le code exécuté en préambule d'un appel système afin de retrouver un offset vers la table des appels systèmes codé dans la mémoire noyau. A l'aide de ceci nous avons développé un "hook" de l'appel système \textit{getdents} permettant de cacher des fichiers aux utilisateurs.
 
-Nous avons décrit cette solution pour des version 4.17 à 4.20 du noyau Linux. Il n'en reste pas moins possible de suivre le même raisonnement pour n'importe quelle autre version du noyau. Quelques ajustements seront peut être nécessaires au niveau des patterns.
+Nous avons décrit cette solution pour des version 4.17 à 4.20 du noyau Linux. Il n'en reste pas moins possible d'appliquer le même raisonnement à n'importe quelle autre version du noyau. Quelques ajustements seront peut être nécessaires au niveau des patterns.
 
 \begin{thebibliography}{}
 	\bibitem{1}
