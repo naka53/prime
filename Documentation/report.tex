@@ -30,7 +30,7 @@
 
 \begin{document}
 	\title{Linux Kernel Rootkit}
-	\author{Castets Nathan, Huge Olivier}
+	\author{Castets Nathan \& Huge Olivier}
 	\maketitle
 
 \begin{abstract}
@@ -232,9 +232,12 @@ static __always_inline void do_syscall_32_irqs_on(struct pt_regs *regs)
 		regs->ax = ia32_sys_call_table[nr](regs);
 #else
 		regs->ax = ia32_sys_call_table[nr](
-			(unsigned int)regs->bx,(unsigned int)regs->cx,
-			(unsigned int)regs->dx,(unsigned int)regs->si,
-			(unsigned int)regs->di,(unsigned int)regs->bp);
+			(unsigned int)regs->bx,
+			(unsigned int)regs->cx,
+			(unsigned int)regs->dx,
+			(unsigned int)regs->si,
+			(unsigned int)regs->di,
+			(unsigned int)regs->bp);
 #endif
 		}
 
