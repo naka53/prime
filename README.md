@@ -109,9 +109,3 @@ pattern detection
 21 d0                 and %edx, %eax  
 48 89 ef              mov %rbp, %rdi  
 ```
-
-### References
-https://0xax.gitbooks.io/linux-insides/content/SysCall/  
-https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c  
-https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S  
-https://github.com/torvalds/linux/blob/master/arch/x86/entry/common.c  
