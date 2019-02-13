@@ -298,22 +298,37 @@ Il est précédé par les instructions suivantes :
 \end{lstlisting}
 \end{frame}
 
-\subsection{Hook un appel système}
-
-\begin{frame}
-\frametitle{Hook un appel système}
-\end{frame}
-
 \subsection{Cacher des fichiers à l'utilisateur}
 
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{Cacher des fichiers à l'utilisateur}
+Appel système \textit{getdents} :
+\begin{lstlisting}[style=CStyle]
+asmlinkage long sys_getdents64(unsigned int fd,
+				struct linux_dirent64 __user *dirent,
+				unsigned int count);
+\end{lstlisting}
+\medskip
+structure \textit{linux\_dirent} :
+\begin{lstlisting}[style=CStyle]
+ struct linux_dirent {
+	unsigned long  d_ino;
+	unsigned long  d_off;
+	unsigned short d_reclen;
+	char d_name[1]; 
+}
+\end{lstlisting}
 \end{frame}
 
 \section{Conclusion}
-
 \begin{frame}
 \frametitle{Conclusion}
+\begin{itemize}
+\item 	Technique courante utilisant l'export de la fonction \textit{sys\_close}
+\item 	Version 4.17 du noyau rendant cette technique obselète
+\item 	Développement d'une technique alternative basée sur la recherche d'un appel à la \textit{sys\_call\_table} dans le code en mémoire
+\item 	Exemple de hook de \textit{getdents} pour cacher des fichiers à l'utilisateur
+\end{itemize}
 \end{frame}
 
 \end{document}
