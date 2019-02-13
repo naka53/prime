@@ -1,7 +1,5 @@
 # prime
 
-Linux kernel rootkit
-
 ### Looking for entry_SYSCALL_64 address  
 ```
 4.17 (arch/x86/entry/entry_64.S)  
