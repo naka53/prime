@@ -1,6 +1,6 @@
 # prime
 
-prime is simple kernel rootkit that fetch sys_call_table offset from code in memory. More pricisely, he is looking at the syscall routine code. Moreover he is able to hide file/process to user that match with a MAGIC_PREFIX.
+prime is a simple kernel rootkit that fetch sys_call_table offset from code in memory. More pricisely, he is looking at the syscall routine code. Moreover he is able to hide file/process to user that match with a MAGIC_PREFIX.
 
 ### Looking for entry_SYSCALL_64 address  
 ```
