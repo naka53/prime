@@ -4,6 +4,7 @@
 \usetheme{Madrid}
 }
 
+\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{listings}
 
@@ -225,6 +226,11 @@ static __always_inline void do_syscall_32_irqs_on(struct pt_regs *regs)
 	/* *** */
 }
 \end{lstlisting}
+\end{frame}
+
+\begin{frame}
+\frametitle{Déterminer l'adresse de la table des appels systèmes}
+\includegraphics[scale=0.43]{figure}
 \end{frame}
 
 \subsection{Patterns pour retrouver l'offset de \textit{sys\_call\_table}}
