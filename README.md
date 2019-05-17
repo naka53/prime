@@ -66,4 +66,8 @@ pattern detection
 48 19 d2              sbb %rdx, %rdx  
 21 d0                 and %edx, %eax  
 48 89 ef              mov %rbp, %rdi  
-```
+```   
+   
+### References   
+https://github.com/torvalds/linux   
+http://0xax.gitbooks.io/linux-insides/content/SysCall   
